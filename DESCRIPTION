@@ -3,14 +3,28 @@ Type: Package
 Title: What the Package Does (Title Case)
 Version: 0.1.0
 Authors@R: c(
-    person(
-      "Jane", "Doe",
-      email = "jane@example.com",
-      role = c("aut", "cre")
-    )
-  )
+      person(given = "Chi-Kuang", family = "Yeh",
+             role = c("aut", "cre"),
+             email = "cyeh@gsu.edu",
+             comment = c(ORCID = "0000-0001-7057-2096")),
+      person(given = "Julie", family = "Zhou",
+             role = c("aut", "ctb")),
+      person(given = "Weng Kee", family = "Wong",
+             role = c("ctb"))
+             )
 Description: More about what it does (maybe more than one line).
     Continuation lines should be indented.
 License: What license is it under?
 Encoding: UTF-8
+License: GPL-3
 LazyData: true
+RoxygenNote: 7.3.3
+Roxygen: list(markdown = TRUE)
+Imports: 
+    CVXR (>= 1.8.0)
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+Config/testthat/edition: 3
