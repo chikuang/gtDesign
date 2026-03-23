@@ -1,6 +1,6 @@
 ---
-title: "gtDesign"
-subtitle: "Convex optimal approximate designs for group testing experiments"
+title: "gtDesign: Optimal designs for group testing experiments"
+subtitle: "Optimal designs for group testing experiments"
 format:
   gfm:
     toc: true

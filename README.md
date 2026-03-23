@@ -1,4 +1,4 @@
-# gtDesign
+# gtDesign: Optimal designs for group testing experiments
 
 
 - [Overview](#overview)
