@@ -373,8 +373,7 @@ eta_da <- calc_eta_weights_maximin(
   directional_derivatives = dd_da,
   criteria = c("D", "A"),
   q = 3,
-  tol = 1e-4,
-  solver = "SCS"
+  tol = 1e-4
 )
 eta_da
 ```
