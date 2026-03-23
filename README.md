@@ -489,8 +489,8 @@ library(knitr)
 
 theta <- c(p0 = 0.07, p1 = 0.93, p2 = 0.96)
 u <- 1:61
-q_val <- 0
-f_q0 <- gt_huang2020_regressor(theta, q = 0)
+q_val <- 0.8
+f_q0 <- gt_huang2020_regressor(theta, q = q_val)
 
 make_summary <- function(design, criterion) {
   design |>
@@ -512,8 +512,6 @@ tab_summary <- bind_rows(
   make_summary(calc_copt(u, f_q0, cVec = c(0, 1, 1))$design, "c-opt")
 )
 
-
-
 knitr::kable(
   tab_summary,
   format = "pipe",
@@ -525,15 +523,15 @@ knitr::kable(
 )
 ```
 
-| Criterion | Support points | Weights             |
-|:----------|:---------------|:--------------------|
-| D-opt     | 1, 17, 61      | 0.333, 0.333, 0.333 |
-| A-opt     | 1, 16, 61      | 0.416, 0.213, 0.371 |
-| D_s-opt   | 1, 16, 61      | 0.131, 0.628, 0.241 |
-| c-opt     | 1, 56, 57      | 0.521, 0.18, 0.299  |
+| Criterion | Support points | Weights                    |
+|:----------|:---------------|:---------------------------|
+| D-opt     | 1, 7, 8, 61    | 0.333, 0.029, 0.304, 0.333 |
+| A-opt     | 1, 8, 61       | 0.125, 0.183, 0.692        |
+| D_s-opt   | 1, 7, 61       | 0.095, 0.573, 0.332        |
+| c-opt     | 1, 56, 57      | 0.139, 0.322, 0.539        |
 
 Support points and weights for approximate optimal designs for the Huang
-(2020) group testing model with q = 0 on the design space {1, …, 61}.
+(2020) group testing model with q = 0.8 on the design space {1, …, 61}.
 
 ## References
 

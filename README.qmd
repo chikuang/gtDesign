@@ -348,8 +348,8 @@ library(knitr)
 
 theta <- c(p0 = 0.07, p1 = 0.93, p2 = 0.96)
 u <- 1:61
-q_val <- 0
-f_q0 <- gt_huang2020_regressor(theta, q = 0)
+q_val <- 0.8
+f_q0 <- gt_huang2020_regressor(theta, q = q_val)
 
 make_summary <- function(design, criterion) {
   design |>
