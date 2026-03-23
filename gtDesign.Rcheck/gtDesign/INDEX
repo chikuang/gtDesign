@@ -1,0 +1,33 @@
+calc_Aopt               A-optimal approximate design for group testing
+                        experiments
+calc_Dopt               D-optimal approximate design for group testing
+                        experiments
+calc_copt               c-optimal approximate design for group testing
+                        experiments
+calc_directional_derivatives
+                        Directional derivatives on a finite candidate
+                        set
+calc_eta_weights_maximin
+                        Eta weights for the maximin equivalence theorem
+calc_multi_directional_derivative
+                        Weighted multi-objective directional derivative
+check_equivalence       Check the equivalence theorem on a finite
+                        candidate set
+check_equivalence_maximin
+                        Check the equivalence theorem for a maximin
+                        design
+compute_design_SO       Single-objective optimal approximate design
+                        (group testing)
+compute_maximin_design
+                        Maximin multi-criterion approximate design
+                        (group testing)
+gt_homogeneous_pool_fisher
+                        Fisher information for one pool under
+                        homogeneous prevalence
+gt_sqrt_fisher_regressor_homogeneous
+                        Regression vector factory for sqrt-Fisher
+                        (single-parameter prevalence)
+plot_equivalence        Plot equivalence theorem directional derivative
+plot_equivalence_maximin
+                        Plot equivalence diagnostics for a maximin
+                        design

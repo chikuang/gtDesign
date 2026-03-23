@@ -1,320 +1,290 @@
-# gtDesign: Optimal group testing experimental designs
+# gtDesign
 
-2026-03-18
 
-<!-- badges: start -->
+- [Overview](#overview)
+- [Statistical model (Huang et al. 2020; Sec. 2 of
+  arXiv:2508.08445)](#statistical-model-huang-et-al-2020-sec-2-of-arxiv250808445)
+- [Installation](#installation)
+- [Package contents (exported)](#package-contents-exported)
+- [Example: D-optimal design (Table 1, M = 61, q =
+  0)](#example-d-optimal-design-table-1-m--61-q--0)
+- [Example: A-optimal design (same theta, q =
+  0)](#example-a-optimal-design-same-theta-q--0)
+- [Example: Cost depending on pool size (q \>
+  0)](#example-cost-depending-on-pool-size-q--0)
+- [Example: c-optimality](#example-c-optimality)
+- [Example: E-optimality via
+  `compute_design_SO`](#example-e-optimality-via-compute_design_so)
+- [Example: Equivalence theorem check
+  (D-opt)](#example-equivalence-theorem-check-d-opt)
+- [Maximin designs (brief)](#maximin-designs-brief)
+- [References](#references)
+- [License](#license)
 
-<!-- [![R-CMD-check](https://github.com/chikuang/cvxDesign/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/chikuang/cvxDesign/actions/workflows/R-CMD-check.yaml) -->
+[![](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-[![](https://img.shields.io/github/languages/code-size/chikuang/cvxDesign.svg)](https://github.com/chikuang/cvxDesign)
-<!-- badges: end -->
+**Authors**
 
-**Authors:**  
-Chi-Kuang Yeh (Georgia State University)  
-[![ORCID](https://img.shields.io/badge/ORCID-0000--0001--7057--2096-A6CE39?logo=orcid.png)](https://orcid.org/0000-0001-7057-2096)
+- Chi-Kuang Yeh (Georgia State University) · [ORCID
+  0000-0001-7057-2096](https://orcid.org/0000-0001-7057-2096)
+- Weng Kee Wong (University of California, Los Angeles) · [ORCID
+  0000-0001-5568-3054](https://orcid.org/0000-0001-5568-3054)
+- Julie Zhou (University of Victoria)
 
-Weng Kee Wong (University of California, Los Angeles)  
-[![ORCID](https://img.shields.io/badge/ORCID-0000--0001--5568--3054-A6CE39?logo=orcid.png)](https://orcid.org/0000-0001-5568-3054)
+## Overview
 
-Julie Zhou (University of Victoria)
+`gtDesign` is an R package for **locally optimal approximate designs**
+on a **finite candidate set** for **group testing** (pooled testing).
+Designs are found by **convex optimization** via
+**[CVXR](https://cran.r-project.org/package=CVXR)** (typically with the
+**CLARABEL** solver).
 
-## Description
+The main application is the **Huang et al. (2020)** model for
+prevalence, sensitivity, and specificity with optional **cost that
+depends on pool size**, as used in **Yeh, Wong, and Zhou (2025)**; see
+[arXiv:2508.08445](https://arxiv.org/abs/2508.08445). The same interface
+also supports **generic nonlinear design** whenever the (approximate)
+information matrix is a sum of rank-one terms
+$\sum_i w_i h(x_i) h(x_i)^\top$.
 
-`gtDesign` is an R package for computing optimal experimental designs
-using convex optimization.  
-The package is intended for researchers and practitioners working on
-approximate and exact design problems under a variety of criteria,
-including classical criteria such as D-, A-, E-, and c-optimality, as
-well as compound and multi-objective design problems.
+This README is generated from **`README.qmd`**. Regenerate with:
 
-The package is motivated by modern design settings where efficient
-numerical optimization, equivalence-theorem-based verification, and
-flexible model specification are all essential.
+``` bash
+quarto render README.qmd
+```
+
+## Statistical model (Huang et al. 2020; Sec. 2 of arXiv:2508.08445)
+
+Let $\theta = (p_0, p_1, p_2)^\top$ denote **prevalence**,
+**sensitivity**, and **specificity**, with $p_0 \in (0,1)$ and
+$p_1, p_2 \in (0.5, 1]$. For a pool of size $x \in \{1,\ldots,M\}$, the
+**positive response probability** is
+
+$$
+\pi(x \mid \theta) = p_1 - (p_1 + p_2 - 1)(1 - p_0)^x .
+$$
+
+**Standardized cost** (assay + enrollment) is
+
+$$
+c(x) = 1 - q + q x, \qquad q = \frac{q_1}{q_0 + q_1} \in [0,1],
+$$
+
+so $q = 0$ gives **constant cost per test** ($c(x) \equiv 1$), matching
+the “equal cost” setting in Huang et al.
+
+The **Fisher information matrix** for $\theta$ under independent
+Bernoulli pool outcomes can be written as
+
+$$
+\mathbf{I}(\mathbf{w}, \theta) = \sum_{j=1}^{M} w_j \, \lambda(x_j) \, \mathbf{f}(x_j) \mathbf{f}(x_j)^\top,
+$$
+
+where $w_j$ are design weights on candidate pool sizes $x_j = j$,
+$\sum_j w_j = 1$,
+
+$$
+\lambda(x) = \frac{1}{c(x)\,\pi(x\mid\theta)\{1-\pi(x\mid\theta)\}},
+$$
+
+and $\mathbf{f}(x) = \nabla_\theta \pi(x\mid\theta)$ is the gradient of
+$\pi$ with respect to $\theta$ (see the paper for the explicit three
+components).
+
+### Regressor used in this package
+
+Many functions (`calc_Dopt`, `calc_Aopt`, `check_equivalence`, …) assume
+a **regression form**
+
+$$
+\mathbf{M}(\mathbf{w}) = \sum_j w_j \, \mathbf{h}(x_j) \mathbf{h}(x_j)^\top
+$$
+
+with **no separate `info_weight`**. That matches the Huang information
+matrix if we set
+
+$$
+\mathbf{h}(x) = \sqrt{\lambda(x)} \, \mathbf{f}(x).
+$$
+
+The factory **`gt_huang2020_regressor(theta, q)`** returns the function
+`function(x)` that computes $\mathbf{h}(x)$. You can still use
+**`compute_design_SO(..., info_weight = ...)`** with raw $\mathbf{f}$
+and $\lambda$ if you prefer the factored form.
+
+**Local optimality:** all designs are **local** with respect to a
+**nominal** $\theta^\ast$ (and fixed $q$, $M$).
 
 ## Installation
 
-You can install the development version of `cvxDesign` from GitHub by
-running
-
-``` r
-# install.packages("pak")
-pak::pak("chikuang/cvxDesign")
-```
-
-or
-
 ``` r
 # install.packages("remotes")
-remotes::install_github("chikuang/cvxDesign")
+remotes::install_github("chikuang/gtDesign")
 ```
 
-## Details
-
-Consider a regression model of the form
-
-$$
-y_i = \eta(\mathbf{x}_i, \boldsymbol{\theta}) + \varepsilon_i, \quad i = 1, \ldots, n,
-$$
-
-where $y_i$ is the response observed at design point
-$\mathbf{x}_i \in \mathcal{X}$,  
-$\boldsymbol{\theta} \in \mathbb{R}^p$ is an unknown parameter vector,
-and $\eta(\mathbf{x}, \boldsymbol{\theta})$ is the mean response
-function, which may be linear or nonlinear in the parameters.
-
-Optimal design seeks a design measure $\xi$ over the design space
-$\mathcal{X}$ that optimizes a scalar criterion based on the information
-matrix $M(\xi)$. Common criteria include:
-
-- **D-optimality**, which maximizes $\log \det M(\xi)$;
-- **A-optimality**, which minimizes $\mathrm{tr}\{M^{-1}(\xi)\}$;
-- **E-optimality**, which maximizes the minimum eigenvalue of $M(\xi)$;
-- **c-optimality**, which minimizes the variance of estimating a
-  specified linear combination of parameters.
-
-In many applications, the design problem can be formulated and solved
-using convex optimization. This makes it possible to handle a wide range
-of criteria and constraints in a unified computational framework.
-
-The goal of `cvxDesign` is to provide a clean and extensible interface
-for these computations, together with tools for:
-
-- computing optimal approximate designs,
-- studying exact designs on finite candidate sets,
-- evaluating design efficiency,
-- checking equivalence theorems,
-- visualizing directional derivative or sensitivity functions.
-
-## Examples
-
-First load the package.
-
 ``` r
-# load package
-library(cvxDesign)
+# Alternative
+devtools::install_github("chikuang/gtDesign")
 ```
 
-### D-optimal design for a quadratic regression model
+**Requirements:** R ≥ 4.0 recommended; packages **CVXR**, **tibble**,
+**MASS** (see `DESCRIPTION`). A conic solver reachable by CVXR
+(e.g. **CLARABEL**) is required at runtime.
 
-Consider the quadratic regression model
+## Package contents (exported)
 
-$$
-y_i = \beta_0 + \beta_1 x_i + \beta_2 x_i^2 + \varepsilon_i.
-$$
+| Area | Functions |
+|----|----|
+| Huang (2020) building blocks | `gt_huang2020_pi`, `gt_huang2020_cost`, `gt_huang2020_lambda`, `gt_huang2020_f`, `gt_huang2020_regressor` |
+| Classical approximate designs | `calc_Dopt`, `calc_Aopt`, `calc_copt` |
+| Single-objective (D, A, Ds, c, E) | `compute_design_SO` |
+| Maximin multi-objective | `compute_maximin_design`, `calc_eta_weights_maximin` |
+| Equivalence | `check_equivalence`, `check_equivalence_maximin` |
+| Plots | `plot_equivalence`, `plot_equivalence_maximin` |
+| Directional derivatives | `calc_directional_derivatives`, `calc_multi_directional_derivative` |
+| Toy 1-parameter perfect assay | `gt_homogeneous_pool_fisher`, `gt_sqrt_fisher_regressor_homogeneous` |
 
-We first define the regression function.
+## Example: D-optimal design (Table 1, M = 61, q = 0)
+
+Nominal $\theta^\ast = (0.07, 0.93, 0.96)^\top$ as in the paper;
+D-optimal approximate design on $\{1,\ldots,61\}$ with $q=0$:
 
 ``` r
-quad_reg <- function(x) {
-  c(1, x, x^2)
-}
+library(gtDesign)
+
+theta <- c(p0 = 0.07, p1 = 0.93, p2 = 0.96)
+M <- 61L
+u <- seq_len(M)
+f <- gt_huang2020_regressor(theta, q = 0)
+
+res_d <- calc_Dopt(u, f, drop_tol = 1e-6)
+res_d$design
 ```
 
-Suppose the candidate design space is a finite grid on $[-1,1]$.
+      point    weight
+    1     1 0.3333346
+    2    17 0.3333309
+    3    61 0.3333345
 
 ``` r
-u <- seq(-1, 1, length.out = 101)
-head(u)
-```
-
-    [1] -1.00 -0.98 -0.96 -0.94 -0.92 -0.90
-
-A typical workflow in `cvxDesign` will look like the following.
-
-``` r
-dout <- calc_Dopt(
-  u = u,
-  f = quad_reg,
-  drop_tol = 1e-4
-)
-
-dout$design |> round(3)
-```
-
-      point weight
-    1    -1  0.333
-    2     0  0.333
-    3     1  0.333
-
-``` r
-dout$value
-```
-
-    [1] -1.909543
-
-``` r
-dout$status
+res_d$status
 ```
 
     [1] "optimal"
 
-The returned object is expected to contain at least:
+Support points $\{1, 17, 61\}$ with weights $1/3$ each match **Table 1**
+(D-criterion, $q=0$) in arXiv:2508.08445.
 
-- the selected support points,
-- the corresponding optimal weights,
-- the value of the design criterion,
-- and, when requested, information useful for equivalence-theorem
-  checks.
-
-### A-optimal design
-
-Similarly, one may compute the A-optimal design by changing the
-criterion.
+## Example: A-optimal design (same theta, q = 0)
 
 ``` r
-aout <- calc_Aopt(
-  u = u,
-  f = quad_reg,
-  drop_tol = 1e-4
-)
-
-aout$design |> round(3)
+res_a <- calc_Aopt(u, f, drop_tol = 1e-6)
+res_a$design
 ```
 
+      point    weight
+    1     1 0.4160718
+    2    16 0.2133409
+    3    61 0.3705873
+
+## Example: Cost depending on pool size (q \> 0)
+
+Larger $q$ puts more weight on enrollment in $c(x) = 1 - q + q x$. Use
+`f <- gt_huang2020_regressor(theta, q)` with your chosen $q \in (0,1]$.
+
+``` r
+f_q <- gt_huang2020_regressor(theta, q = 0.2)
+res_d_q <- calc_Dopt(u, f_q, drop_tol = 1e-6)
+res_d_q$design
+```
+
+      point    weight
+    1     1 0.3333358
+    2    10 0.3333339
+    3    61 0.3333304
+
+## Example: c-optimality
+
+Minimize the asymptotic variance of $\mathbf{c}^\top \hat{\theta}$ for a
+user-specified $\mathbf{c}$ (length 3). Example
+$\mathbf{c} = (0,1,1)^\top$ as in Table 1 of the paper:
+
+``` r
+c_vec <- c(0, 1, 1)
+res_c <- calc_copt(u, f, cVec = c_vec, drop_tol = 1e-8)
+subset(res_c$design, weight > 0.01)
+```
+
+      point    weight
+    1     1 0.5212666
+    4    56 0.1799662
+    5    57 0.2987671
+
+## Example: E-optimality via `compute_design_SO`
+
+``` r
+res_e <- compute_design_SO(
+  u = u,
+  f = f,
+  criterion = "E",
+  solver = "CLARABEL"
+)
+res_e$design
+```
+
+    # A tibble: 3 × 2
       point weight
-    1    -1   0.25
-    2     0   0.50
-    3     1   0.25
+      <int>  <dbl>
+    1     1  0.415
+    2    16  0.250
+    3    61  0.335
+
+## Example: Equivalence theorem check (D-opt)
 
 ``` r
-aout$value
+eq_d <- check_equivalence(res_d, f = f, tol = 1e-4)
+eq_d$max_violation
 ```
 
-    [1] 8
+    [1] 2.21661e-05
 
 ``` r
-aout$status
+eq_d$all_nonpositive
 ```
 
-    [1] "optimal"
-
-### c-optimal design
-
-If the target is a specific linear combination $c^\top \theta$, then a
-c-optimal design can be computed by supplying the vector `cvec`.
+    [1] TRUE
 
 ``` r
-cout <- calc_copt(
-  u = u,
-  f = quad_reg,
-  cVec = c(0.3, 0.4, 0.3),
-  drop_tol = 1e-4
-)
-
-cout$design |> round(3)
+plot_equivalence(eq_d, main = "D-opt: equivalence derivative")
 ```
 
-      point weight
-    1    -1  0.125
-    2     1  0.875
+<img src="README_files/figure-commonmark/unnamed-chunk-9-1.png"
+data-fig-alt="Directional derivative curve for D-optimality; support points highlighted." />
 
-``` r
-cout$value
-```
+## Maximin designs (brief)
 
-    [1] 0.16
-
-``` r
-cout$status
-```
-
-    [1] "optimal"
-
-### Equivalence theorem
-
-An important part of optimal design computation is verification.  
-The package is designed to support equivalence-theorem-based diagnostics
-and plotting.
-
-``` r
-plot_equivalence(
-  design = dout$design,
-  u = u,
-  f = quad_reg,
-  criterion = "D"
-)
-```
-
-``` r
-quad_reg <- function(x) c(1, x, x^2)
-u <- seq(-1, 1, length.out = 101)
-
-dout <- calc_Dopt(u, quad_reg, drop_tol = 1e-4)
-eq_d <- check_equivalence(dout, f = quad_reg)
-
-print(eq_d)
-```
-
-    Equivalence theorem check
-    Criterion          : D 
-    Tolerance          : 1e-06 
-    Max violation      : 3.94291e-05 
-    All nonpositive    : FALSE 
-    Support equal zero : FALSE 
-
-``` r
-plot_equivalence(eq_d)
-```
-
-![](README_files/figure-commonmark/equivalence-1.png)
-
-``` r
-# Aopt
-aout <- calc_Aopt(u, quad_reg, drop_tol = 1e-4)
-eq_a <- check_equivalence(aout, f = quad_reg)
-plot_equivalence(eq_a)
-```
-
-![](README_files/figure-commonmark/equivalence-2.png)
-
-``` r
-# copt
-cout <- calc_copt(u, quad_reg, cVec = c(1, 0.5, 0),
-                  drop_tol = 1e-6)
-eq_c <- check_equivalence(cout, f = quad_reg)
-plot_equivalence(eq_c)
-```
-
-![](README_files/figure-commonmark/copt%20equivalence-1.png)
-
-## Planned features
-
-- [x] Basic package infrastructure
-- [x] Core support for convex-optimization-based design computation
-- [x] D-optimality
-- [x] A-optimality
-- [ ] E-optimality
-- [ ] c-optimality
-- [ ] Compound and multi-objective criteria
-- [ ] Equivalence theorem (sensitivity functions) diagnostics
-- [ ] Exact design support on finite candidate sets
-- [ ] Benchmark examples and vignettes
-- [ ] Shiny app
-- [ ] JSS paper companion materials
-
-## Package vision
-
-The long-term goal of `cvxDesign` is to provide a general computational
-framework for modern optimal design problems, including:
-
-- classical regression design,
-- heteroscedastic models,
-- constrained design problems,
-- compound and robust criteria,
-- group testing design,
-- and other application-driven problems arising in statistics,
-  biostatistics, and machine learning.
+**`compute_maximin_design`** implements the maximin efficiency
+formulation in the paper (Sec. 4). You must supply **reference losses**
+`loss_ref` from **single-objective** optimal designs (e.g. D, A, c, E)
+at the same $\theta^\ast$, $q$, and candidate grid, then pass `criteria`
+and optional contrast vectors in `opts`. See `?compute_maximin_design`
+and `?calc_eta_weights_maximin` for details.
 
 ## References
 
-1.  Atkinson, Anthony C., Donev, Aleksandar N., and Tobias, Randall D.
-    (2007). *Optimum Experimental Designs, with SAS*. Oxford University
+1.  Yeh, C.-K., Wong, W. K., Zhou, J. (2025). Single and multi-objective
+    optimal designs for group testing experiments. *arXiv* 2508.08445.
+    <https://doi.org/10.48550/arXiv.2508.08445>
+
+2.  Huang, S.-Y., Chen, Y.-H., Wang, W. (2020). Optimal group testing
+    designs for estimating prevalence with imperfect tests. *Journal of
+    the Royal Statistical Society Series C*.
+
+3.  Pukelsheim, F. (2006). *Optimal Design of Experiments*. SIAM.
+
+4.  Fedorov, V. V. (1972). *Theory of Optimal Experiments*. Academic
     Press.
-2.  Fedorov, Valerii V. (1972). *Theory of Optimal Experiments*.
-    Academic Press.
-3.  Pukelsheim, Friedrich. (2006). *Optimal Design of Experiments*.
-    SIAM.
-4.  Silvey, Samuel D. (1980). *Optimal Design*. Chapman and Hall.
-5.  Yeh, Chi-Kuang and collaborators. Ongoing work on
-    convex-optimization-based methods for compound and
-    application-driven optimal design problems.
+
+## License
+
+GPL-3 — see the `License` field in `DESCRIPTION`.

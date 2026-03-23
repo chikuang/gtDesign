@@ -14,20 +14,21 @@ Authors@R: c(
              )
 Description: Finite candidate-set approximate optimal designs for group testing
     and related experiments, using convex optimization (CVXR) and equivalence
-    checks. Implements the information matrix and cost structure for the
-    prevalence / sensitivity / specificity model used in Huang et al. (2020), as
-    in Yeh, Wong, and Zhou (arXiv:2508.08445). Also includes a simple
-    one-parameter perfect-assay special case.
-URL: https://arxiv.org/abs/2508.08445
+    checks. Builds on the regression / Fisher-information formulation: supply
+    candidate pool layouts (or other labels) and a map into regression vectors
+    (e.g. score or square-root information contributions). Helpers are included
+    for a homogeneous prevalence model with perfect assays.
 License: GPL-3
 Encoding: UTF-8
-LazyData: true
 RoxygenNote: 7.3.3
 Roxygen: list(markdown = TRUE)
-Imports: 
-    CVXR (>= 1.8.0),
-    tibble,
-    MASS
-Suggests: 
-    testthat (>= 3.0.0)
+Imports: CVXR (>= 1.8.0), tibble, MASS
+Suggests: testthat (>= 3.0.0)
 Config/testthat/edition: 3
+NeedsCompilation: no
+Packaged: 2026-03-23 20:17:14 UTC; chikuang
+Author: Chi-Kuang Yeh [aut, cre] (ORCID:
+    <https://orcid.org/0000-0001-7057-2096>),
+  Julie Zhou [aut, ctb],
+  Weng Kee Wong [ctb]
+Maintainer: Chi-Kuang Yeh <cyeh@gsu.edu>
