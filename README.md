@@ -142,8 +142,8 @@ and $\lambda$ if you prefer the factored form.
 
 ## Example: D-optimal design (Table 1, M = 61, q = 0)
 
-Nominal $\theta^\ast = (0.07, 0.93, 0.96)^\top$ as in the paper;
-D-optimal approximate design on $\{1,\ldots,61\}$ with $q=0$:
+Nominal $\theta^\ast = (0.07, 0.93, 0.96)$ as in the paper; D-optimal
+approximate design on $\{1,\ldots,61\}$ with $q=0$:
 
 ``` r
 library(gtDesign)
@@ -202,8 +202,8 @@ res_d_q$design
 ## Example: c-optimality
 
 Minimize the asymptotic variance of $\mathbf{c}^\top \hat{\theta}$ for a
-user-specified $\mathbf{c}$ (length 3). Example
-$\mathbf{c} = (0,1,1)^\top$ as in Table 1 of the paper:
+user-specified $\mathbf{c}$ (length 3). Example $\mathbf{c} = (0,1,1)$
+as in Table 1 of the paper:
 
 ``` r
 c_vec <- c(0, 1, 1)
@@ -414,7 +414,7 @@ plot_equivalence_maximin(
 <img src="README_files/figure-commonmark/unnamed-chunk-16-1.png"
 data-fig-alt="Maximin equivalence panels for D and A criteria plus combined derivative." />
 
-### Example: D + A + c (contrast $\mathbf{c} = (0,1,1)^\top$)
+### Example: D + A + c (contrast $\mathbf{c} = (0,1,1)$)
 
 Use the same contrast as in the c-optimal example (`c_vec`). Pass
 `opts = list(cVec_c = c_vec)` whenever **c** is included.
