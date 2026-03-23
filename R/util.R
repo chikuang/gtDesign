@@ -294,9 +294,14 @@ validate_loss_ref <- function(loss_ref, criteria) {
       )
     }
 
-    if (!is.numeric(val) || length(val) != 1L || !is.finite(val) || val <= 0) {
+    if (!is.numeric(val) || length(val) != 1L || !is.finite(val)) {
+      stop("`loss_ref$", key, "` must be a finite scalar.", call. = FALSE)
+    }
+
+    # D-criterion loss is -log det(M); it can be negative when det(M) > 1.
+    if (key != "D" && val <= 0) {
       stop(
-        "`loss_ref$", key, "` must be a positive finite scalar.",
+        "`loss_ref$", key, "` must be a positive finite scalar for this criterion.",
         call. = FALSE
       )
     }

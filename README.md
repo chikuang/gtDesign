@@ -17,7 +17,7 @@
   `compute_design_SO`](#example-e-optimality-via-compute_design_so)
 - [Example: Equivalence theorem check
   (D-opt)](#example-equivalence-theorem-check-d-opt)
-- [Maximin designs (brief)](#maximin-designs-brief)
+- [Maximin multi-objective designs](#maximin-multi-objective-designs)
 - [References](#references)
 - [License](#license)
 
@@ -25,13 +25,13 @@
 
 **Authors**
 
-- Chi-Kuang Yeh (Georgia State University)
-  [![ORCID](https://img.shields.io/badge/ORCID-0000--0001--7057--2096-A6CE39?logo=orcid.png)](https://orcid.org/0000-0001-7057-2096)
+Chi-Kuang Yeh (Georgia State University)
+[![ORCID](https://img.shields.io/badge/ORCID-0000--0001--7057--2096-A6CE39?logo=orcid.png)](https://orcid.org/0000-0001-7057-2096)
 
-- Weng Kee Wong (University of California, Los Angeles)
-  [![ORCID](https://img.shields.io/badge/ORCID-0000--0001--5568--3054-A6CE39?logo=orcid.png)](https://orcid.org/0000-0001-7057-2096)
+Weng Kee Wong (University of California, Los Angeles)
+[![ORCID](https://img.shields.io/badge/ORCID-0000--0001--5568--3054-A6CE39?logo=orcid.png)](https://orcid.org/0000-0001-5568-3054)
 
-- Julie Zhou (University of Victoria)
+Julie Zhou (University of Victoria)
 
 ## Overview
 
@@ -257,14 +257,227 @@ plot_equivalence(eq_d, main = "D-opt: equivalence derivative")
 <img src="README_files/figure-commonmark/unnamed-chunk-10-1.png"
 data-fig-alt="Directional derivative curve for D-optimality; support points highlighted." />
 
-## Maximin designs (brief)
+## Maximin multi-objective designs
 
-**`compute_maximin_design`** implements the maximin efficiency
-formulation in the paper (Sec. 4). You must supply **reference losses**
-`loss_ref` from **single-objective** optimal designs (e.g. D, A, c, E)
-at the same $\theta^\ast$, $q$, and candidate grid, then pass `criteria`
-and optional contrast vectors in `opts`. See `?compute_maximin_design`
-and `?calc_eta_weights_maximin` for details.
+The **maximin** formulation (Sec. 4 of
+[arXiv:2508.08445](https://arxiv.org/abs/2508.08445)) maximizes the
+**minimum efficiency** across several criteria. The workflow matches the
+regression-design package
+[**cvxDesign**](https://github.com/chikuang/cvxDesign) ([maximin
+section](https://github.com/chikuang/cvxDesign#maximin-design)): first
+obtain **reference losses** from single-objective optimal designs on the
+**same** candidate set `u` and regressor `f`, then call
+`compute_maximin_design()`. For group testing, `f` is typically
+`gt_huang2020_regressor(theta, q)`; for polynomial regression, `f` can
+be any `function(x)` returning a regressor vector (see cvxDesign
+examples).
+
+Chunks below call `library(gtDesign)`. When you edit package source and
+re-render this file, run **`devtools::install()`** (from the package
+root) first so the README runs against the installed version.
+
+**Reference losses.** Losses must be on the **same scale** as
+`compute_design_SO()` / internal `scalar_loss`: for **D**, the loss is
+$-\log\det(\mathbf{M})$ (so if you use `calc_Dopt()`, pass
+`D = -obj$value` because `calc_Dopt()$value` stores
+$\log\det(\mathbf{M})$). For **A** and **c**, `calc_Aopt()` /
+`calc_copt()` use the same scalar loss as `compute_design_SO()`.
+
+### Step 1: single-objective reference designs (Huang model, D + A)
+
+The chunks below reuse `u`, `f`, `res_d`, and `res_a` from the D-opt and
+A-opt examples.
+
+``` r
+loss_ref <- list(
+  D = -res_d$value,
+  A = res_a$value
+)
+loss_ref
+```
+
+    $D
+    [1] -5.796
+
+    $A
+    [1] 0.7058
+
+### Step 2: maximin design (D and A)
+
+``` r
+res_da <- compute_maximin_design(
+  u = u,
+  f = f,
+  loss_ref = loss_ref,
+  criteria = c("D", "A")
+)
+
+res_da$design
+```
+
+    # A tibble: 4 × 2
+      point weight
+      <int>  <dbl>
+    1     1  0.382
+    2    16  0.114
+    3    17  0.148
+    4    61  0.356
+
+``` r
+res_da$efficiency
+```
+
+        D     A 
+    0.987 0.987 
+
+``` r
+res_da$tstar
+```
+
+    [1] 1.013
+
+The **efficiencies** should be approximately **equal** at a maximin
+solution; **minimum efficiency** equals $1 / t^\ast$ where `tstar` is
+returned by the solver.
+
+### Step 3: numerical check (optional)
+
+``` r
+tol <- 1e-4
+eq_eff <- abs(res_da$efficiency["D"] - res_da$efficiency["A"])
+eq_t   <- abs(min(res_da$efficiency) - 1 / res_da$tstar)
+eq_eff < tol && eq_t < tol
+```
+
+    [1] TRUE
+
+### Step 4: directional derivatives and $\eta$ weights (equivalence)
+
+Parameter dimension is $p = 3$ for $(p_0,p_1,p_2)$.
+**`calc_eta_weights_maximin`** solves a small linear program; if the
+default solver fails, try `solver = "SCS"` and slightly relax `tol`
+(e.g. `1e-4`).
+
+``` r
+dd_da <- calc_directional_derivatives(
+  u = u,
+  M = res_da$info_matrix,
+  f = f,
+  criteria = c("D", "A")
+)
+
+eta_da <- calc_eta_weights_maximin(
+  tstar = res_da$tstar,
+  loss_ref = loss_ref,
+  loss_model = res_da$loss,
+  directional_derivatives = dd_da,
+  criteria = c("D", "A"),
+  q = 3,
+  tol = 1e-4,
+  solver = "SCS"
+)
+eta_da
+```
+
+         D      A 
+    0.1898 0.6205 
+
+### Step 5: equivalence check and plot
+
+``` r
+eqm_da <- check_equivalence_maximin(
+  design_obj = res_da,
+  directional_derivatives = dd_da,
+  eta = eta_da,
+  tol = 1e-3
+)
+eqm_da$all_nonpositive
+```
+
+    [1] TRUE
+
+``` r
+eqm_da$support_equal_zero
+```
+
+    [1] TRUE
+
+``` r
+plot_equivalence_maximin(
+  design_obj = res_da,
+  directional_derivatives = dd_da,
+  eta = eta_da,
+  criteria = c("D", "A")
+)
+```
+
+<img src="README_files/figure-commonmark/unnamed-chunk-16-1.png"
+data-fig-alt="Maximin equivalence panels for D and A criteria plus combined derivative." />
+
+### Example: D + A + c (contrast $\mathbf{c} = (0,1,1)^\top$)
+
+Use the same contrast as in the c-optimal example (`c_vec`). Pass
+`opts = list(cVec_c = c_vec)` whenever **c** is included.
+
+``` r
+loss_ref_dac <- list(
+  D = -res_d$value,
+  A = res_a$value,
+  c = res_c$value
+)
+
+res_dac <- compute_maximin_design(
+  u = u,
+  f = f,
+  loss_ref = loss_ref_dac,
+  criteria = c("D", "A", "c"),
+  opts = list(cVec_c = c_vec)
+)
+
+res_dac$efficiency
+```
+
+         D      A      c 
+    0.8907 0.9587 0.8907 
+
+Directional derivatives, $\eta$ weights, and equivalence for three
+criteria (use a slightly looser tolerance on the combined derivative
+because of numerical slack):
+
+``` r
+dd_dac <- calc_directional_derivatives(
+  u = u,
+  M = res_dac$info_matrix,
+  f = f,
+  criteria = c("D", "A", "c"),
+  cVec = c_vec
+)
+eta_dac <- calc_eta_weights_maximin(
+  tstar = res_dac$tstar,
+  loss_ref = loss_ref_dac,
+  loss_model = res_dac$loss,
+  directional_derivatives = dd_dac,
+  criteria = c("D", "A", "c"),
+  q = 3,
+  tol = 1e-3
+  # solver = "SCS"
+)
+check_equivalence_maximin(res_dac, dd_dac, eta_dac, tol = 0.002)$all_nonpositive
+```
+
+    [1] TRUE
+
+``` r
+plot_equivalence_maximin(
+  res_dac,
+  dd_dac,
+  eta_dac,
+  criteria = c("D", "A", "c")
+)
+```
+
+<img src="README_files/figure-commonmark/unnamed-chunk-19-1.png"
+data-fig-alt="Maximin equivalence panels for D, A, and c criteria." />
 
 ## References
 
