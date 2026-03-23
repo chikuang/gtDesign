@@ -2,9 +2,9 @@
 
 
 - [Overview](#overview)
+- [Installation](#installation)
 - [Statistical model (Huang et al. 2020; Sec. 2 of
   arXiv:2508.08445)](#statistical-model-huang-et-al-2020-sec-2-of-arxiv250808445)
-- [Installation](#installation)
 - [Package contents (exported)](#package-contents-exported)
 - [Example: D-optimal design (Table 1, M = 61, q =
   0)](#example-d-optimal-design-table-1-m--61-q--0)
@@ -25,10 +25,12 @@
 
 **Authors**
 
-- Chi-Kuang Yeh (Georgia State University) · [ORCID
-  0000-0001-7057-2096](https://orcid.org/0000-0001-7057-2096)
-- Weng Kee Wong (University of California, Los Angeles) · [ORCID
-  0000-0001-5568-3054](https://orcid.org/0000-0001-5568-3054)
+- Chi-Kuang Yeh (Georgia State University)
+  [![ORCID](https://img.shields.io/badge/ORCID-0000--0001--7057--2096-A6CE39?logo=orcid.png)](https://orcid.org/0000-0001-7057-2096)
+
+- Weng Kee Wong (University of California, Los Angeles)
+  [![ORCID](https://img.shields.io/badge/ORCID-0000--0001--5568--3054-A6CE39?logo=orcid.png)](https://orcid.org/0000-0001-7057-2096)
+
 - Julie Zhou (University of Victoria)
 
 ## Overview
@@ -47,18 +49,28 @@ also supports **generic nonlinear design** whenever the (approximate)
 information matrix is a sum of rank-one terms
 $\sum_i w_i h(x_i) h(x_i)^\top$.
 
-This README is generated from **`README.qmd`**. Regenerate with:
+## Installation
 
-``` bash
-quarto render README.qmd
+``` r
+# install.packages("remotes")
+remotes::install_github("chikuang/gtDesign")
 ```
+
+``` r
+# Alternative
+devtools::install_github("chikuang/gtDesign")
+```
+
+**Requirements:** R ≥ 4.0 recommended; packages **CVXR**, **tibble**,
+**MASS** (see `DESCRIPTION`). A conic solver reachable by CVXR
+(e.g. **CLARABEL**) is required at runtime.
 
 ## Statistical model (Huang et al. 2020; Sec. 2 of arXiv:2508.08445)
 
-Let $\theta = (p_0, p_1, p_2)^\top$ denote **prevalence**,
-**sensitivity**, and **specificity**, with $p_0 \in (0,1)$ and
-$p_1, p_2 \in (0.5, 1]$. For a pool of size $x \in \{1,\ldots,M\}$, the
-**positive response probability** is
+Let $\theta = (p_0, p_1, p_2)$ denote **prevalence**, **sensitivity**,
+and **specificity**, with $p_0 \in (0,1)$ and $p_1, p_2 \in (0.5, 1]$.
+For a pool of size $x \in \{1,\ldots,M\}$, the **positive response
+probability** is
 
 $$
 \pi(x \mid \theta) = p_1 - (p_1 + p_2 - 1)(1 - p_0)^x .
@@ -107,29 +119,13 @@ $$
 \mathbf{h}(x) = \sqrt{\lambda(x)} \, \mathbf{f}(x).
 $$
 
-The factory **`gt_huang2020_regressor(theta, q)`** returns the function
+The function **`gt_huang2020_regressor(theta, q)`** returns the function
 `function(x)` that computes $\mathbf{h}(x)$. You can still use
 **`compute_design_SO(..., info_weight = ...)`** with raw $\mathbf{f}$
 and $\lambda$ if you prefer the factored form.
 
 **Local optimality:** all designs are **local** with respect to a
 **nominal** $\theta^\ast$ (and fixed $q$, $M$).
-
-## Installation
-
-``` r
-# install.packages("remotes")
-remotes::install_github("chikuang/gtDesign")
-```
-
-``` r
-# Alternative
-devtools::install_github("chikuang/gtDesign")
-```
-
-**Requirements:** R ≥ 4.0 recommended; packages **CVXR**, **tibble**,
-**MASS** (see `DESCRIPTION`). A conic solver reachable by CVXR
-(e.g. **CLARABEL**) is required at runtime.
 
 ## Package contents (exported)
 
@@ -158,13 +154,13 @@ u <- seq_len(M)
 f <- gt_huang2020_regressor(theta, q = 0)
 
 res_d <- calc_Dopt(u, f, drop_tol = 1e-6)
-res_d$design
+res_d$design |> round(3)
 ```
 
-      point    weight
-    1     1 0.3333346
-    2    17 0.3333309
-    3    61 0.3333345
+      point weight
+    1     1  0.333
+    2    17  0.333
+    3    61  0.333
 
 ``` r
 res_d$status
@@ -179,13 +175,13 @@ Support points $\{1, 17, 61\}$ with weights $1/3$ each match **Table 1**
 
 ``` r
 res_a <- calc_Aopt(u, f, drop_tol = 1e-6)
-res_a$design
+res_a$design |> round(3)
 ```
 
-      point    weight
-    1     1 0.4160718
-    2    16 0.2133409
-    3    61 0.3705873
+      point weight
+    1     1  0.416
+    2    16  0.213
+    3    61  0.371
 
 ## Example: Cost depending on pool size (q \> 0)
 
@@ -198,10 +194,10 @@ res_d_q <- calc_Dopt(u, f_q, drop_tol = 1e-6)
 res_d_q$design
 ```
 
-      point    weight
-    1     1 0.3333358
-    2    10 0.3333339
-    3    61 0.3333304
+      point weight
+    1     1 0.3333
+    2    10 0.3333
+    3    61 0.3333
 
 ## Example: c-optimality
 
@@ -215,10 +211,10 @@ res_c <- calc_copt(u, f, cVec = c_vec, drop_tol = 1e-8)
 subset(res_c$design, weight > 0.01)
 ```
 
-      point    weight
-    1     1 0.5212666
-    4    56 0.1799662
-    5    57 0.2987671
+      point weight
+    1     1 0.5213
+    4    56 0.1800
+    5    57 0.2988
 
 ## Example: E-optimality via `compute_design_SO`
 
@@ -246,7 +242,7 @@ eq_d <- check_equivalence(res_d, f = f, tol = 1e-4)
 eq_d$max_violation
 ```
 
-    [1] 2.21661e-05
+    [1] 2.217e-05
 
 ``` r
 eq_d$all_nonpositive
@@ -258,7 +254,7 @@ eq_d$all_nonpositive
 plot_equivalence(eq_d, main = "D-opt: equivalence derivative")
 ```
 
-<img src="README_files/figure-commonmark/unnamed-chunk-9-1.png"
+<img src="README_files/figure-commonmark/unnamed-chunk-10-1.png"
 data-fig-alt="Directional derivative curve for D-optimality; support points highlighted." />
 
 ## Maximin designs (brief)
