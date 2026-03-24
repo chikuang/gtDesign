@@ -136,7 +136,7 @@ and $\lambda$ if you prefer the factored form.
 | Huang (2020) building blocks | `gt_huang2020_pi`, `gt_huang2020_cost`, `gt_huang2020_lambda`, `gt_huang2020_f`, `gt_huang2020_regressor` |
 | Classical approximate designs | `calc_Dopt`, `calc_Aopt`, `calc_copt` |
 | Single-objective (D, A, Ds, c, E) | `compute_design_SO` |
-| Maximin multi-objective | `compute_maximin_design`, `calc_eta_weights_maximin` |
+| Maximin multi-objective | `maximin_design_workflow`, `compute_maximin_design`, `calc_eta_weights_maximin` |
 | Equivalence | `check_equivalence`, `check_equivalence_maximin` |
 | Plots | `plot_equivalence`, `plot_equivalence_maximin` |
 | Directional derivatives | `calc_directional_derivatives`, `calc_multi_directional_derivative` |
@@ -602,98 +602,48 @@ eq_eff < tol && eq_t < tol
 ``` r
 u <- seq_len(150L)
 cVec <- c(1, 0, 0)
+theta = c(0.07, 0.93, 0.96)
 f_q <- gt_huang2020_regressor(theta, q = 0.2)
-res_d_q <- calc_Dopt(u, f_q, drop_tol = 1e-6)
-res_a_q <- calc_Aopt(u, f_q, drop_tol = 1e-6)
-res_c_q <- calc_copt(u, f_q, cVec = cVec, 
-                     drop_tol = 1e-6)
-loss_ref <- list(
-  D = -res_d_q$value,
-  A = res_a_q$value,
-  c = res_c_q$value
-)
-loss_ref
-```
-
-    $D
-    [1] -2.017
-
-    $A
-    [1] 3.045
-
-    $c
-    [1] 0.1376
-
-``` r
-loss_ref_dac <- list(
-  D = -res_d_q$value,
-  A = res_a_q$value,
-  c = res_c_q$value
-)
-
-res_dac <- compute_maximin_design(
+out <- maximin_design_workflow(
   u = u,
   f = f_q,
-  loss_ref = loss_ref_dac,
   criteria = c("D", "A", "c"),
-  opts = list(cVec_c = cVec)
+  opts = list(cVec_c = cVec),
+  make_figure = TRUE
 )
+```
 
-res_dac$efficiency
+![](README_files/figure-commonmark/Figure%202-1.png)
+
+``` r
+out$maximin$efficiency
 ```
 
          D      A      c 
     0.9001 0.8545 0.8545 
 
 ``` r
-dd_dac <- calc_directional_derivatives(
-  u = u,
-  M = res_dac$info_matrix,
-  f = f_q,
-  criteria = c("D", "A", "c"),
-  cVec = cVec
-)
-eta_dac <- calc_eta_weights_maximin(
-  tstar = res_dac$tstar,
-  loss_ref = loss_ref_dac,
-  loss_model = res_dac$loss,
-  directional_derivatives = dd_dac,
-  criteria = c("D", "A", "c"),
-  q = 3,
-  tol = 1e-3
-)
+out$maximin$value
+```
 
-res_dac$tstar |> round(3)
+    [1] 0.8545
+
+``` r
+out$maximin$tstar
 ```
 
     [1] 1.17
 
 ``` r
-eta_dac |> round(3)
+out$maximin$design
 ```
 
-        D     A     c 
-    0.000 0.183 3.216 
-
-``` r
-check_equivalence_maximin(res_dac, dd_dac, eta_dac, tol = 0.002)$all_nonpositive
-```
-
-    [1] TRUE
-
-``` r
-#| fig-width: 9
-#| fig-height: 5
-#| fig-alt: Maximin equivalence panels for D, A, and Ds criteria.
-plot_equivalence_maximin(
-  res_dac,
-  dd_dac,
-  eta_dac,
-  criteria = c("D", "A", "c")
-)
-```
-
-![](README_files/figure-commonmark/Figure2-1.png)
+    # A tibble: 3 × 2
+      point weight
+      <int>  <dbl>
+    1     1  0.158
+    2    10  0.364
+    3    75  0.478
 
 ## References
 
