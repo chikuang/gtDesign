@@ -50,12 +50,12 @@ rounding_fix_zero_floor_counts <- function(n_prime) {
 
 
 #' @noRd
-rounding_extend_pool_sizes <- function(xx, n_index, u) {
-  xx <- as.integer(xx)
+rounding_extend_pool_sizes <- function(x, n_index, u) {
+  x <- as.integer(x)
   u <- as.integer(u)
   n_index <- as.integer(n_index)
   ext <- integer(0)
-  for (xi in xx) {
+  for (xi in x) {
     ext <- c(ext, seq.int(xi - n_index, xi + n_index))
   }
   sort(unique(ext[ext %in% u]))
@@ -63,15 +63,15 @@ rounding_extend_pool_sizes <- function(xx, n_index, u) {
 
 
 #' @noRd
-rounding_merge_floor_extension <- function(design_round1, xx_temp, w_ext) {
+rounding_merge_floor_extension <- function(design_round1, x_temp, w_ext) {
   x <- rbind(as.numeric(design_round1[1, ]), as.numeric(design_round1[2, ]))
-  xx_temp <- as.numeric(xx_temp)
+  x_temp <- as.numeric(x_temp)
   w_ext <- as.numeric(w_ext)
-  all_keys <- sort(unique(c(as.numeric(x[1, ]), xx_temp)))
+  all_keys <- sort(unique(c(as.numeric(x[1, ]), x_temp)))
   values <- numeric(length(all_keys))
   ix <- match(x[1, ], all_keys)
   values[ix] <- values[ix] + x[2, ]
-  iy <- match(xx_temp, all_keys)
+  iy <- match(x_temp, all_keys)
   if (anyNA(iy)) {
     stop("Internal error: extended support alignment.", call. = FALSE)
   }
@@ -102,7 +102,7 @@ rounding_prune_and_name_design <- function(dm) {
   }
   out <- dm[, keep, drop = FALSE]
   colnames(out) <- NULL
-  rownames(out) <- c("xx", "n_prime")
+  rownames(out) <- c("x", "n_prime")
   out
 }
 
@@ -131,22 +131,22 @@ rounding_delta_matrix <- function(dm_round1, dm_exact) {
   keep <- d != 0
   if (!any(keep)) {
     out <- matrix(numeric(0), nrow = 2L, ncol = 0L)
-    rownames(out) <- c("xx", "Delta_n")
+    rownames(out) <- c("x", "Delta_n")
     return(out)
   }
   out <- rbind(pools[keep], d[keep])
   colnames(out) <- NULL
-  rownames(out) <- c("xx", "Delta_n")
+  rownames(out) <- c("x", "Delta_n")
   out
 }
 
 
-# Extension columns named by pool sizes (xx_ext), then used_cost, remaining, loss.
+# Extension columns named by pool sizes (x_ext), then used_cost, remaining, loss.
 #' @noRd
-rounding_extension_colnames <- function(L, ncol_mat, xx_ext = NULL) {
+rounding_extension_colnames <- function(L, ncol_mat, x_ext = NULL) {
   if (L > 0L) {
-    idx <- if (length(xx_ext) == L) {
-      as.character(as.integer(xx_ext))
+    idx <- if (length(x_ext) == L) {
+      as.character(as.integer(x_ext))
     } else {
       as.character(seq_len(L))
     }
@@ -208,7 +208,7 @@ efficiency_exact_vs_approx <- function(M_app, M_ex, criterion, opts, p) {
 #' @return A list with `design_round1` (2-row matrix: pool sizes, floor counts;
 #'   columns with zero runs are removed; no column names),
 #'   `design_exact` (same format after merge),
-#'   `delta` (2-row matrix: pool sizes `xx` and `Delta_n` \eqn{= n_{\mathrm{exact}}
+#'   `delta` (2-row matrix: pool sizes `x` and `Delta_n` \eqn{= n_{\mathrm{exact}}
 #'   - n_{\mathrm{round1}}}; only pool sizes with nonzero change are columns),
 #'   `M_approx`,
 #'   `M_exact`, `efficiency`, `loss_approx`, `loss_exact`, `C_remaining` after
@@ -240,13 +240,13 @@ round_gt_design_budget <- function(approx_design,
   p <- length(eval_regvec(u[1L], f))
 
   d <- approx_design$design
-  xx <- as.integer(d$point)
+  x <- as.integer(d$point)
   ww <- as.numeric(d$weight)
   if (any(ww < 0) || abs(sum(ww) - 1) > 1e-5) {
     stop("`approx_design` weights must be nonnegative and sum to 1.", call. = FALSE)
   }
 
-  cxx <- vapply(xx, function(x) gt_huang2020_cost(x, q_cost), numeric(1))
+  cxx <- vapply(x, function(xi) gt_huang2020_cost(xi, q_cost), numeric(1))
   nn_i <- C * ww / cxx
   n_prime <- floor(nn_i)
   if (isTRUE(fix_zero_floor)) {
@@ -259,12 +259,12 @@ round_gt_design_budget <- function(approx_design,
   spent_floor <- sum(n_prime * cxx)
   Cr <- max(0, round(as.numeric(C - spent_floor), 4L))
 
-  design_round1 <- rbind(xx, n_prime)
+  design_round1 <- rbind(x, n_prime)
 
-  xx_temp <- rounding_extend_pool_sizes(xx, n_index, u)
-  L <- length(xx_temp)
-  cxx_all <- if (length(xx_temp)) {
-    vapply(xx_temp, function(x) gt_huang2020_cost(x, q_cost), numeric(1))
+  x_temp <- rounding_extend_pool_sizes(x, n_index, u)
+  L <- length(x_temp)
+  cxx_all <- if (length(x_temp)) {
+    vapply(x_temp, function(xi) gt_huang2020_cost(xi, q_cost), numeric(1))
   } else {
     numeric(0)
   }
@@ -275,7 +275,7 @@ round_gt_design_budget <- function(approx_design,
     matrix(numeric(0), nrow = 0L, ncol = 0L)
   }
   if (ncol(des2) > 0L) {
-    colnames(des2) <- rounding_extension_colnames(L, ncol(des2), xx_temp)
+    colnames(des2) <- rounding_extension_colnames(L, ncol(des2), x_temp)
   }
 
   if (criterion == "c" && is.null(opts$cVec_c)) {
@@ -285,7 +285,7 @@ round_gt_design_budget <- function(approx_design,
     stop("For criterion `Ds`, supply `opts$cVec_Ds`.", call. = FALSE)
   }
 
-  M_app <- fim_matrix(xx, ww, f)
+  M_app <- fim_matrix(x, ww, f)
 
   loss_eval <- function(M) {
     scalar_loss_from_M(M, criterion, opts)
@@ -330,7 +330,7 @@ round_gt_design_budget <- function(approx_design,
 
   for (k in seq_len(n_cases)) {
     w_ext <- des2[k, seq_len(L), drop = TRUE]
-    merged <- rounding_merge_floor_extension(design_round1, xx_temp, w_ext)
+    merged <- rounding_merge_floor_extension(design_round1, x_temp, w_ext)
     pool_sizes <- merged[1, ]
     counts <- merged[2, ]
     M_k <- rounding_fim_from_counts(pool_sizes, counts, C, theta, q_cost)
@@ -338,7 +338,7 @@ round_gt_design_budget <- function(approx_design,
   }
 
   ext_full <- cbind(des2, loss = losses)
-  colnames(ext_full) <- rounding_extension_colnames(L, ncol(ext_full), xx_temp)
+  colnames(ext_full) <- rounding_extension_colnames(L, ncol(ext_full), x_temp)
   ord <- order(losses)
   ext_sorted <- ext_full[ord, , drop = FALSE]
   colnames(ext_sorted) <- colnames(ext_full)
@@ -349,7 +349,7 @@ round_gt_design_budget <- function(approx_design,
   )
 
   best_ext <- ext_sorted[1L, seq_len(L), drop = TRUE]
-  design_exact <- rounding_merge_floor_extension(design_round1, xx_temp, best_ext)
+  design_exact <- rounding_merge_floor_extension(design_round1, x_temp, best_ext)
 
   pool_sizes <- design_exact[1, ]
   counts <- design_exact[2, ]

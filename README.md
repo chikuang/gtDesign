@@ -687,7 +687,11 @@ out$maximin$design
     2    10  0.364
     3    75  0.478
 
-### Table 4
+### Table 3 (exact design via budget rounding, D-optimality)
+
+Rounding Algorithm II in Sec. 5.1: approximate D-opt on `u`, then
+\[round_gt_design_budget()\] for each total cost `C`. Re-run for
+`C \in \{100, 500, 10000\}` (or as in the paper table).
 
 ``` r
 theta <- c(p0 = 0.07, p1 = 0.93, p2 = 0.96)
@@ -698,7 +702,7 @@ f <- gt_huang2020_regressor(theta, q_cost)
 # calculate the approximate design
 res_D <- calc_Dopt(u, f, drop_tol = 1e-6)
 
-# Table 3, C e.g., C = 100, 500, 10000
+# Example: C = 100 (repeat for C = 500, 10000, ...)
 out <- round_gt_design_budget(
   approx_design = res_D,
   u = u,
@@ -751,6 +755,157 @@ out$delta
 #   my_cost <- out$design_round1[2, i] * (1 - q_cost + q_cost*out$design_round1[1,i]) + my_cost
 # }
 ```
+
+### Table 4 (maximin exact designs, arXiv Sec. 5.2)
+
+Table 4 reports **exact** designs $\xi_{RAC}$ from the rounding
+algorithms applied to **maximin** approximate designs on $M=61$,
+$\bm{\theta}^*=(0.07,0.93,0.96)$. **MinEff** is $\min_j \mathrm{Eff}_j$
+at $\xi_{RAC}$; **$1/t^*$** is the minimum efficiency of the maximin OAD
+(Table 2). Part (i) uses **fixed run count** $n$ with $q=0$ (Rounding
+Algorithm I); part (ii) uses **budget** $C$ with $q=0.2$ (Rounding
+Algorithm II). The helper functions \[round_gt_design_n_maximin()\] and
+\[round_gt_design_budget_maximin()\] provide reusable implementations
+for these two settings.
+
+Example below shows **one Table 4 row**: DD-AA, $q=0.2$, $C=100$. It
+should return $x=(1,10,59,61)$, $n=(26,8,1,3)$, and MinEff
+$\approx 0.932$.
+
+``` r
+theta <- c(p0 = 0.07, p1 = 0.93, p2 = 0.96)
+u <- seq_len(61L)
+q_cost <- 0.2
+f <- gt_huang2020_regressor(theta, q_cost)
+
+# single-objective references used in maximin efficiencies
+res_d <- calc_Dopt(u, f, drop_tol = 1e-6)
+res_a <- calc_Aopt(u, f, drop_tol = 1e-6)
+loss_da <- list(D = -res_d$value, A = res_a$value)
+
+# maximin approximate design (D-A)
+mm_da <- compute_maximin_design(
+  u = u,
+  f = f,
+  loss_ref = loss_da,
+  criteria = c("D", "A"),
+  drop_tol = 1e-6
+)
+
+# exact design at C = 100 using Algorithm II + modified Step II (MinEff search)
+out_da_100 <- round_gt_design_budget_maximin(
+  approx_design = mm_da,
+  u = u,
+  theta = theta,
+  C = 100,
+  q_cost = q_cost,
+  loss_ref = loss_da,
+  criteria = c("D", "A")
+)
+
+out_da_100$design_exact
+```
+
+            [,1] [,2] [,3] [,4]
+    xx         1   10   59   61
+    n_prime   26    8    1    3
+
+``` r
+out_da_100$delta
+```
+
+            [,1] [,2]
+    xx         1   59
+    Delta_n    1    1
+
+``` r
+out_da_100$min_efficiency
+```
+
+    [1] 0.9318
+
+``` r
+1 / mm_da$tstar
+```
+
+    [1] 0.9487
+
+The full chunk below is set to `eval=FALSE` so the README renders
+quickly; set `eval=TRUE` to run all Table 4 rows.
+
+``` r
+theta <- c(p0 = 0.07, p1 = 0.93, p2 = 0.96)
+u <- seq_len(61L)
+q_cost <- 0.2
+f <- gt_huang2020_regressor(theta, q_cost)
+
+res_d <- calc_Dopt(u, f, drop_tol = 1e-6)
+res_a <- calc_Aopt(u, f, drop_tol = 1e-6)
+loss_da <- list(D = -res_d$value, A = res_a$value)
+
+mm_da <- compute_maximin_design(
+  u = u,
+  f = f,
+  loss_ref = loss_da,
+  criteria = c("D", "A"),
+  drop_tol = 1e-6
+)
+min(mm_da$efficiency)   # compare to 1/t* in Table 4
+1 / mm_da$tstar
+
+for (C in c(100, 500)) {
+  out_da <- round_gt_design_budget(
+    mm_da,
+    u = u,
+    theta = theta,
+    C = C,
+    q_cost = q_cost,
+    criterion = "D"
+  )
+  ed_da <- exact_design_efficiency_maximin(
+    out_da$M_exact,
+    loss_da,
+    c("D", "A")
+  )
+  list(C = C, design_exact = out_da$design_exact, min_eff = ed_da$min_efficiency)
+}
+
+res_ds <- calc_copt(u, f, cVec = c(1, 0, 0), drop_tol = 1e-6)
+loss_dads <- list(D = -res_d$value, A = res_a$value, Ds = res_ds$value)
+opts_ds <- list(cVec_Ds = c(1, 0, 0))
+
+mm_dads <- compute_maximin_design(
+  u = u,
+  f = f,
+  loss_ref = loss_dads,
+  criteria = c("D", "A", "Ds"),
+  opts = opts_ds,
+  drop_tol = 1e-6
+)
+
+for (C in c(100, 500)) {
+  out_3 <- round_gt_design_budget(
+    mm_dads,
+    u = u,
+    theta = theta,
+    C = C,
+    q_cost = q_cost,
+    criterion = "D",
+    opts = opts_ds
+  )
+  ed_3 <- exact_design_efficiency_maximin(
+    out_3$M_exact,
+    loss_dads,
+    c("D", "A", "Ds"),
+    opts = opts_ds
+  )
+  list(C = C, design_exact = out_3$design_exact, min_eff = ed_3$min_efficiency)
+}
+```
+
+Numerical values may differ slightly from the paper due to the CVXR
+solver and the extension step in \[round_gt_design_budget()\]
+(single-criterion merge for Step II).
 
 ## References
 

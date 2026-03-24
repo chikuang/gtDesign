@@ -364,3 +364,47 @@ compute_efficiencies_maximin <- function(loss_ref, loss, criteria, q) {
 
   eff
 }
+
+
+#' Efficiencies of an exact design relative to single-objective optima (maximin)
+#'
+#' Computes criterion-wise efficiencies as in eq. (5) of Yeh, Wong, and Zhou
+#' (arXiv:2508.08445), and their minimum (**MinEff** in Table 4). Use after
+#' [round_gt_design_budget()] with a maximin approximate design: pass
+#' `M_exact = out$M_exact`, the same `loss_ref` as in [compute_maximin_design()],
+#' and the same `criteria` vector.
+#'
+#' @param M_exact Information matrix of the exact (rounded) design (e.g.
+#'   `out$M_exact` from [round_gt_design_budget()]).
+#' @param loss_ref Named list of reference losses from single-objective designs,
+#'   on the same scale as [compute_maximin_design()].
+#' @param criteria Character vector of criteria (e.g. `c("D", "A")`).
+#' @param opts Optional list for contrasts (\code{cVec_Ds}, \code{cVec_c}) for
+#'   \eqn{D_s}- and \eqn{c}-type criteria.
+#' @param p Parameter dimension; defaults to `nrow(M_exact)`.
+#'
+#' @return A list with `efficiencies` (named numeric vector) and
+#'   `min_efficiency` (\eqn{\min_j \mathrm{Eff}_j}).
+#'
+#' @export
+exact_design_efficiency_maximin <- function(M_exact,
+                                            loss_ref,
+                                            criteria,
+                                            opts = list(),
+                                            p = nrow(M_exact)) {
+  if (!is.matrix(M_exact) || !is.numeric(M_exact)) {
+    stop("`M_exact` must be a numeric matrix.", call. = FALSE)
+  }
+  if (length(p) != 1L || !is.finite(p) || p < 1) {
+    stop("`p` must be a positive finite scalar.", call. = FALSE)
+  }
+  loss <- compute_losses_at_M(M_exact, criteria, opts)
+  eff <- compute_efficiencies_maximin(loss_ref, loss, criteria, q = p)
+  if (!length(eff)) {
+    stop("No efficiencies computed; check `loss_ref` and `criteria`.", call. = FALSE)
+  }
+  list(
+    efficiencies = eff,
+    min_efficiency = min(eff)
+  )
+}

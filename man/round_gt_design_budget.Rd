@@ -53,7 +53,7 @@ MATLAB MO scripts that skip this repair (then overspend is possible).}
 A list with \code{design_round1} (2-row matrix: pool sizes, floor counts;
 columns with zero runs are removed; no column names),
 \code{design_exact} (same format after merge),
-\code{delta} (2-row matrix: pool sizes \code{xx} and \code{Delta_n} \eqn{= n_{\mathrm{exact}}
+\code{delta} (2-row matrix: pool sizes \code{x} and \code{Delta_n} \eqn{= n_{\mathrm{exact}}
   - n_{\mathrm{round1}}}; only pool sizes with nonzero change are columns),
 \code{M_approx},
 \code{M_exact}, \code{efficiency}, \code{loss_approx}, \code{loss_exact}, \code{C_remaining} after
