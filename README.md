@@ -687,6 +687,71 @@ out$maximin$design
     2    10  0.364
     3    75  0.478
 
+### Table 4
+
+``` r
+theta <- c(p0 = 0.07, p1 = 0.93, p2 = 0.96)
+u <- seq_len(150L)
+q_cost <- 0
+f <- gt_huang2020_regressor(theta, q_cost)
+
+# calculate the approximate design
+res_D <- calc_Dopt(u, f, drop_tol = 1e-6)
+
+# Table 3, C e.g., C = 100, 500, 10000
+out <- round_gt_design_budget(
+  approx_design = res_D,
+  u = u,
+  theta = theta,
+  C = 100,
+  q_cost = q_cost,
+  criterion = "D"
+)
+out$C_remaining
+```
+
+    [1] 1
+
+``` r
+out$design_exact  
+```
+
+            [,1] [,2] [,3] [,4] [,5]
+    xx         1   19  148  149  150
+    n_prime   32   33    1    1   33
+
+``` r
+out$efficiency    
+```
+
+    [1] 0.9993
+
+``` r
+out$design_round1
+```
+
+            [,1] [,2] [,3] [,4] [,5]
+    xx         1   19  148  149  150
+    n_prime   31   33    1    1   33
+
+``` r
+out$delta
+```
+
+            [,1]
+    xx         1
+    Delta_n    1
+
+``` r
+# 8*(1 - q_cost + q_cost*1 ) # 8 
+# 2*(1 - q_cost + q_cost*10) # 5.6
+# 
+# my_cost <- 0
+# for (i in 1:ncol(out$design_round1)) {
+#   my_cost <- out$design_round1[2, i] * (1 - q_cost + q_cost*out$design_round1[1,i]) + my_cost
+# }
+```
+
 ## References
 
 1.  Yeh, C.-K., Wong, W. K., Zhou, J. (2025). Single and multi-objective
