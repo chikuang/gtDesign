@@ -696,7 +696,7 @@ Rounding Algorithm II in Sec. 5.1: approximate D-opt on `u`, then
 ``` r
 theta <- c(p0 = 0.07, p1 = 0.93, p2 = 0.96)
 u <- seq_len(150L)
-q_cost <- 0
+q_cost <- 0.2
 f <- gt_huang2020_regressor(theta, q_cost)
 
 # calculate the approximate design
@@ -709,42 +709,43 @@ out <- round_gt_design_budget(
   theta = theta,
   C = 100,
   q_cost = q_cost,
-  criterion = "D"
+  criterion = "D",
+  fix_zero_floor = FALSE
 )
 out$C_remaining
 ```
 
-    [1] 1
+    [1] 7.8
 
 ``` r
 out$design_exact  
 ```
 
-            [,1] [,2] [,3] [,4] [,5]
-    xx         1   19  148  149  150
-    n_prime   32   33    1    1   33
+            [,1] [,2] [,3] [,4]
+    x          1   10   11   67
+    n_prime   35   12    1    2
 
 ``` r
 out$efficiency    
 ```
 
-    [1] 0.9993
+    [1] 0.994
 
 ``` r
 out$design_round1
 ```
 
-            [,1] [,2] [,3] [,4] [,5]
-    xx         1   19  148  149  150
-    n_prime   31   33    1    1   33
+            [,1] [,2] [,3]
+    x          1   10   67
+    n_prime   33   11    2
 
 ``` r
 out$delta
 ```
 
-            [,1]
-    xx         1
-    Delta_n    1
+            [,1] [,2] [,3]
+    x          1   10   11
+    Delta_n    2    1    1
 
 ``` r
 # 8*(1 - q_cost + q_cost*1 ) # 8 
@@ -760,13 +761,13 @@ out$delta
 
 Table 4 reports **exact** designs $\xi_{RAC}$ from the rounding
 algorithms applied to **maximin** approximate designs on $M=61$,
-$\bm{\theta}^*=(0.07,0.93,0.96)$. **MinEff** is $\min_j \mathrm{Eff}_j$
-at $\xi_{RAC}$; **$1/t^*$** is the minimum efficiency of the maximin OAD
-(Table 2). Part (i) uses **fixed run count** $n$ with $q=0$ (Rounding
-Algorithm I); part (ii) uses **budget** $C$ with $q=0.2$ (Rounding
-Algorithm II). The helper functions \[round_gt_design_n_maximin()\] and
-\[round_gt_design_budget_maximin()\] provide reusable implementations
-for these two settings.
+$\boldsymbol{\theta}^*=(0.07,0.93,0.96)$. **MinEff** is
+$\min_j \mathrm{Eff}_j$ at $\xi_{RAC}$; **$1/t^*$** is the minimum
+efficiency of the maximin OAD (Table 2). Part (i) uses **fixed run
+count** $n$ with $q=0$ (Rounding Algorithm I); part (ii) uses **budget**
+$C$ with $q=0.2$ (Rounding Algorithm II). The helper functions
+\[round_gt_design_n_maximin()\] and \[round_gt_design_budget_maximin()\]
+provide reusable implementations for these two settings.
 
 Example below shows **one Table 4 row**: DD-AA, $q=0.2$, $C=100$. It
 should return $x=(1,10,59,61)$, $n=(26,8,1,3)$, and MinEff
@@ -807,7 +808,7 @@ out_da_100$design_exact
 ```
 
             [,1] [,2] [,3] [,4]
-    xx         1   10   59   61
+    x          1   10   59   61
     n_prime   26    8    1    3
 
 ``` r
@@ -815,7 +816,7 @@ out_da_100$delta
 ```
 
             [,1] [,2]
-    xx         1   59
+    x          1   59
     Delta_n    1    1
 
 ``` r
