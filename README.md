@@ -413,8 +413,51 @@ plot_equivalence_maximin(
 )
 ```
 
-<img src="README_files/figure-commonmark/unnamed-chunk-16-1.png"
-data-fig-alt="Maximin equivalence panels for D and A criteria plus combined derivative." />
+![](README_files/figure-commonmark/unnamed-chunk-16-1.png)
+
+### Wrapper function
+
+``` r
+out <- maximin_design_workflow(
+  u = u,
+  f = f,
+  criteria = c("D", "A"),
+  make_figure = TRUE
+)
+```
+
+![](README_files/figure-commonmark/wrapper-1.png)
+
+``` r
+out$maximin$efficiency
+```
+
+        D     A 
+    0.987 0.987 
+
+``` r
+out$maximin$value
+```
+
+    [1] 0.987
+
+``` r
+out$maximin$tstar
+```
+
+    [1] 1.013
+
+``` r
+out$maximin$design
+```
+
+    # A tibble: 4 × 2
+      point weight
+      <int>  <dbl>
+    1     1  0.382
+    2    16  0.114
+    3    17  0.148
+    4    61  0.356
 
 ### Example: D + A + c (contrast $\mathbf{c} = (0,1,1)$)
 
@@ -477,8 +520,7 @@ plot_equivalence_maximin(
 )
 ```
 
-<img src="README_files/figure-commonmark/unnamed-chunk-19-1.png"
-data-fig-alt="Maximin equivalence panels for D, A, and c criteria." />
+![](README_files/figure-commonmark/unnamed-chunk-19-1.png)
 
 ## Tables and Figures in the paper
 

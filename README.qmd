@@ -267,15 +267,27 @@ eqm_da$support_equal_zero
 ```
 
 ```{r}
-#| fig-width: 8
-#| fig-height: 4
-#| fig-alt: Maximin equivalence panels for D and A criteria plus combined derivative.
 plot_equivalence_maximin(
   design_obj = res_da,
   directional_derivatives = dd_da,
   eta = eta_da,
   criteria = c("D", "A")
 )
+```
+
+### Wrapper function
+
+``` {r wrapper}
+out <- maximin_design_workflow(
+  u = u,
+  f = f,
+  criteria = c("D", "A"),
+  make_figure = TRUE
+)
+out$maximin$efficiency
+out$maximin$value
+out$maximin$tstar
+out$maximin$design
 ```
 
 ### Example: D + A + c (contrast $\mathbf{c} = (0,1,1)$)
@@ -323,9 +335,6 @@ check_equivalence_maximin(res_dac, dd_dac, eta_dac, tol = 0.002)$all_nonpositive
 ```
 
 ```{r}
-#| fig-width: 9
-#| fig-height: 5
-#| fig-alt: Maximin equivalence panels for D, A, and c criteria.
 plot_equivalence_maximin(
   res_dac,
   dd_dac,
