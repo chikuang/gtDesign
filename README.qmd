@@ -497,3 +497,8 @@ plot_equivalence_maximin(
 ## License
 
 GPL-3 — see the `License` field in `DESCRIPTION`.
+
+## TODO
+
+- [ ] Finish up the package documentation and vignettes.
+- [ ] Add the rounding algorithms to obtain the optimal exact designs

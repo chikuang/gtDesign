@@ -21,6 +21,7 @@
 - [Tables and Figures in the paper](#tables-and-figures-in-the-paper)
 - [References](#references)
 - [License](#license)
+- [TODO](#todo)
 
 [![](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
@@ -139,6 +140,7 @@ and $\lambda$ if you prefer the factored form.
 | Equivalence | `check_equivalence`, `check_equivalence_maximin` |
 | Plots | `plot_equivalence`, `plot_equivalence_maximin` |
 | Directional derivatives | `calc_directional_derivatives`, `calc_multi_directional_derivative` |
+
 ## Example: D-optimal design (Table 1, M = 61, q = 0)
 
 Nominal $\theta^\ast = (0.07, 0.93, 0.96)$ as in the paper; D-optimal
@@ -595,7 +597,7 @@ eq_eff < tol && eq_t < tol
 
     [1] TRUE
 
-### Figure 1
+### Figure 2
 
 ``` r
 u <- seq_len(150L)
@@ -691,7 +693,7 @@ plot_equivalence_maximin(
 )
 ```
 
-![](README_files/figure-commonmark/Figure1-1.png)
+![](README_files/figure-commonmark/Figure2-1.png)
 
 ## References
 
@@ -711,3 +713,8 @@ plot_equivalence_maximin(
 ## License
 
 GPL-3 — see the `License` field in `DESCRIPTION`.
+
+## TODO
+
+- [ ] Finish up the package documentation and vignettes.
+- [ ] Add the rounding algorithms to obtain the optimal exact designs
