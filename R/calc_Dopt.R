@@ -3,8 +3,7 @@
 #' Computes a D-optimal approximate design on a finite candidate set. The
 #' regression map `f` typically encodes contributions to the Fisher information
 #' matrix (e.g. score vectors or square-root information); see
-#' [gt_sqrt_fisher_regressor_homogeneous()] for a one-parameter prevalence
-#' example.
+#' [gt_huang2020_regressor()] for the Huang et al.\ (2020) three-parameter model.
 #'
 #' @param u Candidate design points (e.g. pool sizes or coded pool layouts).
 #' @param f Function returning a numeric vector at one design point.

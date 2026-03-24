@@ -36,6 +36,5 @@ An object of class \code{"gt_d_design"} and \code{"gt_design"}.
 Computes a D-optimal approximate design on a finite candidate set. The
 regression map \code{f} typically encodes contributions to the Fisher information
 matrix (e.g. score vectors or square-root information); see
-\code{\link[=gt_sqrt_fisher_regressor_homogeneous]{gt_sqrt_fisher_regressor_homogeneous()}} for a one-parameter prevalence
-example.
+\code{\link[=gt_huang2020_regressor]{gt_huang2020_regressor()}} for the Huang et al.\ (2020) three-parameter model.
 }

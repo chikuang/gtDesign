@@ -12,7 +12,11 @@ calc_eta_weights_maximin(
   criteria,
   q,
   tol = 1e-06,
+  complementary_slack = TRUE,
+  fallback_no_slack = TRUE,
+  complementary_tol_mult = 100,
   solver = "CLARABEL",
+  solvers_fallback = c("SCS", "ECOS"),
   ...
 )
 }
@@ -30,9 +34,23 @@ such as \code{dD}, \code{dA}, \code{dDs}, \code{dc}, and \code{dE}.}
 
 \item{q}{Parameter dimension.}
 
-\item{tol}{Numerical tolerance.}
+\item{tol}{Numerical tolerance for the combined directional derivative and (if
+used) complementary slackness.}
 
-\item{solver}{Solver passed to \code{\link[CVXR:psolve]{CVXR::psolve()}}.}
+\item{complementary_slack}{Logical; if \code{TRUE}, first attempt includes
+complementary slackness. If that LP is infeasible and \code{fallback_no_slack} is
+\code{TRUE}, a second attempt omits those constraints.}
+
+\item{fallback_no_slack}{Logical; default \code{TRUE}. See \code{complementary_slack}.}
+
+\item{complementary_tol_mult}{Positive multiplier applied to \code{tol} for the
+complementary slackness bounds (helps feasibility).}
+
+\item{solver}{Solver passed to \code{\link[CVXR:psolve]{CVXR::psolve()}} for the first attempt.}
+
+\item{solvers_fallback}{Character vector of solvers to try if the first
+attempt fails (default includes SCS and ECOS, which often succeed when
+CLARABEL reports infeasible on small LPs).}
 
 \item{...}{Additional arguments passed to \code{\link[CVXR:psolve]{CVXR::psolve()}}.}
 }
@@ -44,4 +62,12 @@ Solves for nonnegative weights in the maximin equivalence theorem. The
 returned vector \code{eta} satisfies the normalization condition induced by the
 derivative of the active right-hand sides and enforces a nonpositive weighted
 combination of directional derivatives across the candidate set.
+}
+\details{
+The linear program from Gao et al.\ also imposes approximate \strong{complementary
+slackness} \verb{|eta_k * gap_k| <= tol}. With tight \code{tol}, that set can be
+\strong{empty} together with the normalization constraint (common with three or
+more criteria). By default this function \strong{retries without} complementary
+slackness if the strict problem is infeasible, and cycles a few solvers
+(works well with \strong{CVXR} 1.8.x).
 }

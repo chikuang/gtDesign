@@ -139,8 +139,6 @@ and $\lambda$ if you prefer the factored form.
 | Equivalence | `check_equivalence`, `check_equivalence_maximin` |
 | Plots | `plot_equivalence`, `plot_equivalence_maximin` |
 | Directional derivatives | `calc_directional_derivatives`, `calc_multi_directional_derivative` |
-| Toy 1-parameter perfect assay | `gt_homogeneous_pool_fisher`, `gt_sqrt_fisher_regressor_homogeneous` |
-
 ## Example: D-optimal design (Table 1, M = 61, q = 0)
 
 Nominal $\theta^\ast = (0.07, 0.93, 0.96)$ as in the paper; D-optimal
@@ -355,9 +353,11 @@ eq_eff < tol && eq_t < tol
 ### Step 4: directional derivatives and $\eta$ weights (equivalence)
 
 Parameter dimension is $p = 3$ for $(p_0,p_1,p_2)$.
-**`calc_eta_weights_maximin`** solves a small linear program; if the
-default solver fails, try `solver = "SCS"` and slightly relax `tol`
-(e.g. `1e-4`).
+**`calc_eta_weights_maximin`** solves a small linear program; use the
+**same** `f` (and `cVec` / `opts` for **c**) as in
+`compute_maximin_design()`. If the default solver fails, try
+`solver = "SCS"` and slightly relax `tol` (e.g. `1e-4`); see
+`?calc_eta_weights_maximin`.
 
 ``` r
 dd_da <- calc_directional_derivatives(
@@ -460,7 +460,6 @@ eta_dac <- calc_eta_weights_maximin(
   criteria = c("D", "A", "c"),
   q = 3,
   tol = 1e-3
-  # solver = "SCS"
 )
 check_equivalence_maximin(res_dac, dd_dac, eta_dac, tol = 0.002)$all_nonpositive
 ```
@@ -532,6 +531,167 @@ knitr::kable(
 
 Support points and weights for approximate optimal designs for the Huang
 (2020) group testing model with q = 0.8 on the design space {1, …, 61}.
+
+### Table 2
+
+``` r
+u <- seq_len(150L)
+f_q <- gt_huang2020_regressor(theta, q = 0.0)
+res_d_q <- calc_Dopt(u, f_q, drop_tol = 1e-6)
+res_a_q <- calc_Aopt(u, f_q, drop_tol = 1e-6)
+loss_ref <- list(
+  D = -res_d_q$value,
+  A = res_a_q$value
+)
+loss_ref
+```
+
+    $D
+    [1] -6.185
+
+    $A
+    [1] 0.5617
+
+``` r
+### Step 2: maximin design (D and A)
+
+res_da <- compute_maximin_design(
+  u = u,
+  f = f_q,
+  loss_ref = loss_ref,
+  criteria = c("D", "A")
+)
+
+res_da$design
+```
+
+    # A tibble: 3 × 2
+      point weight
+      <int>  <dbl>
+    1     1  0.409
+    2    19  0.251
+    3   150  0.339
+
+``` r
+res_da$efficiency
+```
+
+         D      A 
+    0.9805 0.9805 
+
+``` r
+res_da$tstar
+```
+
+    [1] 1.02
+
+``` r
+### Step 3 numerical check
+tol <- 1e-4
+eq_eff <- abs(res_da$efficiency["D"] - res_da$efficiency["A"])
+eq_t   <- abs(min(res_da$efficiency) - 1 / res_da$tstar)
+eq_eff < tol && eq_t < tol
+```
+
+    [1] TRUE
+
+### Figure 1
+
+``` r
+u <- seq_len(150L)
+cVec <- c(1, 0, 0)
+f_q <- gt_huang2020_regressor(theta, q = 0.2)
+res_d_q <- calc_Dopt(u, f_q, drop_tol = 1e-6)
+res_a_q <- calc_Aopt(u, f_q, drop_tol = 1e-6)
+res_c_q <- calc_copt(u, f_q, cVec = cVec, 
+                     drop_tol = 1e-6)
+loss_ref <- list(
+  D = -res_d_q$value,
+  A = res_a_q$value,
+  c = res_c_q$value
+)
+loss_ref
+```
+
+    $D
+    [1] -2.017
+
+    $A
+    [1] 3.045
+
+    $c
+    [1] 0.1376
+
+``` r
+loss_ref_dac <- list(
+  D = -res_d_q$value,
+  A = res_a_q$value,
+  c = res_c_q$value
+)
+
+res_dac <- compute_maximin_design(
+  u = u,
+  f = f_q,
+  loss_ref = loss_ref_dac,
+  criteria = c("D", "A", "c"),
+  opts = list(cVec_c = cVec)
+)
+
+res_dac$efficiency
+```
+
+         D      A      c 
+    0.9001 0.8545 0.8545 
+
+``` r
+dd_dac <- calc_directional_derivatives(
+  u = u,
+  M = res_dac$info_matrix,
+  f = f_q,
+  criteria = c("D", "A", "c"),
+  cVec = cVec
+)
+eta_dac <- calc_eta_weights_maximin(
+  tstar = res_dac$tstar,
+  loss_ref = loss_ref_dac,
+  loss_model = res_dac$loss,
+  directional_derivatives = dd_dac,
+  criteria = c("D", "A", "c"),
+  q = 3,
+  tol = 1e-3
+)
+
+res_dac$tstar |> round(3)
+```
+
+    [1] 1.17
+
+``` r
+eta_dac |> round(3)
+```
+
+        D     A     c 
+    0.000 0.183 3.216 
+
+``` r
+check_equivalence_maximin(res_dac, dd_dac, eta_dac, tol = 0.002)$all_nonpositive
+```
+
+    [1] TRUE
+
+``` r
+#| fig-width: 9
+#| fig-height: 5
+#| fig-alt: Maximin equivalence panels for D, A, and Ds criteria.
+plot_equivalence_maximin(
+  res_dac,
+  dd_dac,
+  eta_dac,
+  criteria = c("D", "A", "c")
+)
+```
+
+![](README_files/figure-commonmark/Figure1-1.png)
 
 ## References
 

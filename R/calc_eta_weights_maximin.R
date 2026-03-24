@@ -61,12 +61,74 @@ compute_maximin_rhs_derivatives <- function(tstar, loss_ref, criteria, q) {
 }
 
 
+#' Build CVXR eta LP (internal)
+#'
+#' @return List with `problem` and `eta` ([CVXR::Variable()]).
+#' @noRd
+build_eta_problem <- function(K,
+                              criteria,
+                              dd_names,
+                              directional_derivatives,
+                              gaps,
+                              rhs_derivs,
+                              tol_deriv,
+                              tol_comp,
+                              use_complementary_slack) {
+  eta <- CVXR::Variable(K, nonneg = TRUE)
+
+  norm_expr <- 0
+  for (k in seq_len(K)) {
+    key <- canon_crit_key(criteria[k])
+    norm_expr <- norm_expr + eta[k] * rhs_derivs[[key]]
+  }
+
+  constraints <- list(
+    norm_expr == 1,
+    eta >= 0
+  )
+
+  if (isTRUE(use_complementary_slack)) {
+    for (k in seq_len(K)) {
+      key <- canon_crit_key(criteria[k])
+      delta <- gaps[[key]]
+
+      constraints <- c(constraints, list(
+        eta[k] * delta <= tol_comp,
+        -eta[k] * delta <= tol_comp
+      ))
+    }
+  }
+
+  sum_deriv <- 0
+  for (k in seq_len(K)) {
+    field <- dd_names[k]
+    sum_deriv <- sum_deriv + eta[k] * directional_derivatives[[field]]
+  }
+
+  constraints <- c(constraints, list(sum_deriv <= tol_deriv))
+
+  problem <- CVXR::Problem(
+    objective = CVXR::Minimize(sum(eta)),
+    constraints = constraints
+  )
+
+  list(problem = problem, eta = eta)
+}
+
+
 #' Eta weights for the maximin equivalence theorem
 #'
 #' Solves for nonnegative weights in the maximin equivalence theorem. The
 #' returned vector `eta` satisfies the normalization condition induced by the
 #' derivative of the active right-hand sides and enforces a nonpositive weighted
 #' combination of directional derivatives across the candidate set.
+#'
+#' The linear program from Gao et al.\ also imposes approximate **complementary
+#' slackness** `|eta_k * gap_k| <= tol`. With tight `tol`, that set can be
+#' **empty** together with the normalization constraint (common with three or
+#' more criteria). By default this function **retries without** complementary
+#' slackness if the strict problem is infeasible, and cycles a few solvers
+#' (works well with **CVXR** 1.8.x).
 #'
 #' @param tstar Optimal maximin scalar returned by [compute_maximin_design()].
 #' @param loss_ref Named list of reference losses from single-objective designs.
@@ -75,8 +137,18 @@ compute_maximin_rhs_derivatives <- function(tstar, loss_ref, criteria, q) {
 #'   such as `dD`, `dA`, `dDs`, `dc`, and `dE`.
 #' @param criteria Character vector of criteria, e.g. `c("D", "A")`.
 #' @param q Parameter dimension.
-#' @param tol Numerical tolerance.
-#' @param solver Solver passed to [CVXR::psolve()].
+#' @param tol Numerical tolerance for the combined directional derivative and (if
+#'   used) complementary slackness.
+#' @param complementary_slack Logical; if `TRUE`, first attempt includes
+#'   complementary slackness. If that LP is infeasible and `fallback_no_slack` is
+#'   `TRUE`, a second attempt omits those constraints.
+#' @param fallback_no_slack Logical; default `TRUE`. See `complementary_slack`.
+#' @param complementary_tol_mult Positive multiplier applied to `tol` for the
+#'   complementary slackness bounds (helps feasibility).
+#' @param solver Solver passed to [CVXR::psolve()] for the first attempt.
+#' @param solvers_fallback Character vector of solvers to try if the first
+#'   attempt fails (default includes SCS and ECOS, which often succeed when
+#'   CLARABEL reports infeasible on small LPs).
 #' @param ... Additional arguments passed to [CVXR::psolve()].
 #'
 #' @return A named numeric vector of eta weights.
@@ -88,7 +160,11 @@ calc_eta_weights_maximin <- function(tstar,
                                      criteria,
                                      q,
                                      tol = 1e-6,
+                                     complementary_slack = TRUE,
+                                     fallback_no_slack = TRUE,
+                                     complementary_tol_mult = 100,
                                      solver = "CLARABEL",
+                                     solvers_fallback = c("SCS", "ECOS"),
                                      ...) {
   if (!requireNamespace("CVXR", quietly = TRUE)) {
     stop("Package `CVXR` is required.", call. = FALSE)
@@ -111,6 +187,12 @@ calc_eta_weights_maximin <- function(tstar,
   }
   if (!is.numeric(tol) || length(tol) != 1L || !is.finite(tol) || tol <= 0) {
     stop("`tol` must be a positive finite scalar.", call. = FALSE)
+  }
+  if (!is.numeric(complementary_tol_mult) ||
+        length(complementary_tol_mult) != 1L ||
+        !is.finite(complementary_tol_mult) ||
+        complementary_tol_mult <= 0) {
+    stop("`complementary_tol_mult` must be a positive finite scalar.", call. = FALSE)
   }
 
   crit_to_dd <- list(
@@ -162,51 +244,67 @@ calc_eta_weights_maximin <- function(tstar,
   )
 
   K <- length(criteria)
-  eta <- CVXR::Variable(K, nonneg = TRUE)
+  tol_comp <- tol * complementary_tol_mult
+  solvers <- unique(c(solver, solvers_fallback))
+  state <- list(attempts = character())
 
-  norm_expr <- 0
-  for (k in seq_len(K)) {
-    key <- canon_crit_key(criteria[k])
-    norm_expr <- norm_expr + eta[k] * rhs_derivs[[key]]
+  run_solvers <- function(use_slack) {
+    for (slv in solvers) {
+      built <- build_eta_problem(
+        K = K,
+        criteria = criteria,
+        dd_names = dd_names,
+        directional_derivatives = directional_derivatives,
+        gaps = gaps,
+        rhs_derivs = rhs_derivs,
+        tol_deriv = tol,
+        tol_comp = tol_comp,
+        use_complementary_slack = use_slack
+      )
+      ok <- tryCatch(
+        {
+          CVXR::psolve(built$problem, solver = slv, ...)
+          TRUE
+        },
+        error = function(e) FALSE
+      )
+      st <- if (ok) CVXR::status(built$problem) else "solver_error"
+      state$attempts <- c(state$attempts, paste0(slv, "/", use_slack, ":", st))
+      if (ok && st %in% c("optimal", "optimal_inaccurate")) {
+        eta <- as.numeric(CVXR::value(built$eta))
+        if (all(is.finite(eta))) {
+          return(eta)
+        }
+      }
+    }
+    NULL
   }
 
-  constraints <- list(
-    norm_expr == 1,
-    eta >= 0
-  )
-
-  for (k in seq_len(K)) {
-    key <- canon_crit_key(criteria[k])
-    delta <- gaps[[key]]
-
-    constraints <- c(constraints, list(
-      eta[k] * delta <= tol,
-      -eta[k] * delta <= tol
-    ))
+  eta_opt <- NULL
+  if (isTRUE(complementary_slack)) {
+    eta_opt <- run_solvers(TRUE)
+  }
+  if (is.null(eta_opt)) {
+    if (isTRUE(complementary_slack) && isTRUE(fallback_no_slack)) {
+      warning(
+        "Complementary slackness constraints were infeasible; ",
+        "solving again without them (normalization + derivative constraints only).",
+        call. = FALSE
+      )
+    }
+    if (isTRUE(fallback_no_slack) || !isTRUE(complementary_slack)) {
+      eta_opt <- run_solvers(FALSE)
+    }
   }
 
-  sum_deriv <- 0
-  for (k in seq_len(K)) {
-    field <- dd_names[k]
-    sum_deriv <- sum_deriv + eta[k] * directional_derivatives[[field]]
+  if (is.null(eta_opt)) {
+    stop(
+      "Could not solve for eta. Attempts: ",
+      paste(state$attempts, collapse = "; "),
+      call. = FALSE
+    )
   }
 
-  constraints <- c(constraints, list(sum_deriv <= tol))
-
-  problem <- CVXR::Problem(
-    objective = CVXR::Minimize(sum(eta)),
-    constraints = constraints
-  )
-
-  optval <- CVXR::psolve(problem, solver = solver, ...)
-  status <- CVXR::status(problem)
-
-  if (!status %in% c("optimal", "optimal_inaccurate")) {
-    stop("Solver did not return an optimal solution. Status: ", status, call. = FALSE)
-  }
-
-  eta_opt <- as.numeric(CVXR::value(eta))
   names(eta_opt) <- criteria
-
   eta_opt
 }
