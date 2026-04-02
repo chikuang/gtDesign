@@ -298,8 +298,10 @@ validate_loss_ref <- function(loss_ref, criteria) {
       stop("`loss_ref$", key, "` must be a finite scalar.", call. = FALSE)
     }
 
-    # D-criterion loss is -log det(M); it can be negative when det(M) > 1.
-    if (key != "D" && val <= 0) {
+    # D: loss = -log det(M); sign depends on det(M).
+    # E: loss = -lambda_min(M); typically negative when lambda_min(M) > 0.
+    # A, Ds, c: losses are positive (trace / quadratic forms on M^{-1}).
+    if (key %in% c("A", "Ds", "c") && val <= 0) {
       stop(
         "`loss_ref$", key, "` must be a positive finite scalar for this criterion.",
         call. = FALSE
@@ -357,6 +359,10 @@ compute_efficiencies_maximin <- function(loss_ref, loss, criteria, q) {
 
     if (key == "D") {
       eff["D"] <- exp(((-cur_val) - (-ref_val)) / q)
+    } else if (key == "E") {
+      # Paper eq. (5): Eff_E(w) = phi_E(w) / phi_E(w*_E) with phi_E(w) = -lambda_min(M).
+      # Since our internal losses store phi_E, this is cur_val/ref_val.
+      eff["E"] <- cur_val / ref_val
     } else {
       eff[key] <- ref_val / cur_val
     }

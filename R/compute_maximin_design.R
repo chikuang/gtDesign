@@ -5,6 +5,43 @@
 #' when multiple experimental goals (e.g. overall prevalence versus contrasts)
 #' must be balanced in group testing allocation.
 #'
+#' @details
+#' **Link to Yeh, Wong, and Zhou (arXiv:2508.08445, Sec. 4.1).** Let
+#' \eqn{\mathbf{M}(\mathbf{w})=\mathbf{I}(\mathbf{w},\theta^*)} be the information
+#' matrix on the candidate set, and let \eqn{\phi_D,\phi_A,\phi_c,\phi_E} be the
+#' single-objective functionals in their eq. (4), with efficiencies
+#' \eqn{\mathrm{Eff}_j(\mathbf{w})} in eq. (5).
+#'
+#' * **Eq. (6)** — Maximin objective:
+#'   \deqn{\max_{\mathbf{w}\in\Delta_M}\ \min\{\mathrm{Eff}_1(\mathbf{w}),\ldots,\mathrm{Eff}_K(\mathbf{w})\}.}
+#'   At the optimum, \eqn{\min_j \mathrm{Eff}_j = 1/t^*} for the scalar \eqn{t^*}
+#'   below (paper’s \eqn{t}).
+#'
+#' * **Eq. (7)** — Equivalent convex program (Gao et al., 2025):
+#'   \deqn{\min_{\mathbf{w},\,t\ge 0} t \quad\text{s.t.}\quad \Phi_j(\mathbf{w}) \le h_j(t),\ j=1,\ldots,K,}
+#'   where \eqn{\Phi_j} is \eqn{\log\phi_D} for **D**, \eqn{\phi_A} for **A**,
+#'   \eqn{\phi_c} for **c** / **Ds**, and \eqn{\phi_E} for **E**, as in the paper.
+#'   This function minimizes **`tstar`** (\eqn{t} in the paper).
+#'
+#' * **Eq. (8)** — Bounds \eqn{h_j(t)} on the right-hand side (with \eqn{s=\dim(\theta)}):
+#'   \deqn{h_D(t)=\log\phi_D(\mathbf{w}_D^*)+s\log t,\quad
+#'         h_A(t)=t\,\phi_A(\mathbf{w}_A^*),\quad
+#'         h_c(t)=t\,\phi_c(\mathbf{w}_c^*),\quad
+#'         h_E(t)=\phi_E(\mathbf{w}_E^*)/t.}
+#'   Implemented constraints (same structure; build `loss_ref` from
+#'   [calc_Dopt()], [calc_Aopt()], [calc_copt()], [calc_Eopt()]):
+#'   \itemize{
+#'     \item **D:** \eqn{-\log\det(\mathbf{M}) \le \mathrm{loss}_D^{\mathrm{ref}} + s\log(t^*)}
+#'       with \eqn{\mathrm{loss}_D^{\mathrm{ref}} = -\log\det(\mathbf{M}_D^*)}.
+#'     \item **A:** \eqn{\mathrm{tr}(\mathbf{M}^{-1}) \le t^*\,\mathrm{loss}_A^{\mathrm{ref}}}.
+#'     \item **c / Ds:** \eqn{\mathbf{c}^\top\mathbf{M}^{-1}\mathbf{c} \le t^*\,\mathrm{loss}^{\mathrm{ref}}}.
+#'     \item **E:** \eqn{-\lambda_{\min}(\mathbf{M}) \le \mathrm{loss}_E^{\mathrm{ref}}/t^*}
+#'       with \eqn{\mathrm{loss}_E^{\mathrm{ref}} = -\lambda_{\min}(\mathbf{M}_E^*)} as from [calc_Eopt()].
+#'   }
+#'
+#' Reference losses must match the paper’s \eqn{\phi}-scale and the same conventions as
+#' [compute_design_SO()] (internal scalar loss).
+#'
 #' @inheritParams compute_design_SO
 #' @param loss_ref Named list of reference losses from single-objective
 #'   designs, on the same scale as [compute_design_SO()] internal losses.
@@ -12,6 +49,12 @@
 #'   `"c"`, or `"E"`.
 #'
 #' @return A list of class `"gt_maximin_design"` and `"gt_design"`.
+#'
+#' @references
+#' Yeh, C.-K., Wong, W. K., Zhou, J. (2025). Single and multi-objective optimal
+#' designs for group testing experiments. *arXiv* 2508.08445.
+#' Sec. 4.1, eq. (6)--(8).
+#'
 #' @export
 compute_maximin_design <- function(u,
                                    f,

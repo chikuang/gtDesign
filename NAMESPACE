@@ -2,6 +2,7 @@
 
 export(calc_Aopt)
 export(calc_Dopt)
+export(calc_Eopt)
 export(calc_copt)
 export(calc_directional_derivatives)
 export(calc_eta_weights_maximin)

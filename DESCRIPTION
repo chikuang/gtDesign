@@ -8,7 +8,7 @@ Authors@R: c(
              email = "cyeh@gsu.edu",
              comment = c(ORCID = "0000-0001-7057-2096")),
       person(given = "Julie", family = "Zhou",
-             role = c("ctb")),
+             role = c("aut")),
       person(given = "Weng Kee", family = "Wong",
              role = c("ctb"))
              )
