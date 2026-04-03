@@ -10,7 +10,7 @@ round_gt_design_subject_budget(
   theta,
   n_subject_allow,
   q_cost,
-  criterion = c("D", "A", "c", "Ds"),
+  criterion = c("D", "A", "c", "Ds", "E"),
   opts = list(),
   n_index = 2L,
   fix_zero_floor = TRUE,
@@ -30,7 +30,7 @@ or \code{\link[=compute_design_SO]{compute_design_SO()}} on candidate set \code{
 
 \item{q_cost}{Cost ratio \eqn{q} in \eqn{c(x)=1-q+qx}.}
 
-\item{criterion}{One of \code{"D"}, \code{"A"}, \code{"c"}, \code{"Ds"}.}
+\item{criterion}{One of \code{"D"}, \code{"A"}, \code{"c"}, \code{"Ds"}, \code{"E"}.}
 
 \item{opts}{Contrast options: \code{cVec_c} and/or \code{cVec_Ds} when needed.}
 

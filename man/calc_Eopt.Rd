@@ -20,16 +20,17 @@ calc_Eopt(u, f, solver = "CLARABEL", ..., drop_tol = 1e-08, ridge = 1e-08)
 \item{ridge}{Small diagonal ridge for numerical stability in \code{log_det}.}
 }
 \value{
-An object of class \code{"gt_e_design"} and \code{"gt_design"}. Component
-\code{value} is \eqn{-\lambda_{\min}(\mathbf{M})} (smaller is better under this
-convention, consistent with \code{compute_design_SO()}).
+An object of class \code{"gt_e_design"} and \code{"gt_design"}. Components
+\code{value} and \code{optval} are the minimization objective
+\eqn{-\lambda_{\min}(\mathbf{M})}: \code{value} is recomputed at the cleaned
+support, \code{optval} is the solver optimum of the minimize objective (they may
+differ slightly after \code{drop_tol}).
 }
 \description{
-Maximizes the smallest eigenvalue of the (approximate) information matrix
-\eqn{\mathbf{M}(\mathbf{w}) = \sum_i w_i \mathbf{h}(x_i)\mathbf{h}(x_i)^\top} on a
-finite candidate set. The scalar loss (to be minimized) is
-\eqn{\mathrm{loss}(\mathbf{M}) = -\lambda_{\min}(\mathbf{M})}, matching the usual
-MATLAB form \code{loss = -lambda_min(FIM)} (e.g.\ \code{calc_loss_E}).
+Minimizes \eqn{-\lambda_{\min}(\mathbf{M})} over \eqn{\mathbf{w}} on a finite
+candidate set via \code{CVXR::Minimize(-CVXR::lambda_min(\ldots))}. The
+reported objective is \eqn{\mathrm{loss}(\mathbf{M}) = -\lambda_{\min}(\mathbf{M})},
+matching MATLAB \code{loss = -lambda_min(FIM)} (e.g.\ \code{calc_loss_E}).
 }
 \details{
 This matches \code{\link[=compute_design_SO]{compute_design_SO()}} with \code{criterion = "E"} (same scalar loss).

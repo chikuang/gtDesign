@@ -9,7 +9,7 @@ if (!exists("calc_Dopt", mode = "function")) {
 }
 
 theta <- c(p0 = 0.022, p1 = 0.92, p2 = 0.965)
-u <- 1:15L
+u <- seq_len(15L)
 n_subject_allow <- 6632
 q_cost <- 0
 support_tol <- 1e-5
@@ -21,7 +21,7 @@ design_to_string <- function(des_mat) {
 
 # Helper for one Table-6 row.
 # Input:
-#   - criterion: one of "D", "A", "c", "Ds"
+#   - criterion: one of "D", "A", "E", "c", "Ds"
 #   - cvec: contrast vector only used for c / Ds criteria
 # What it does:
 #   1) solve the approximate optimal design under this criterion;
@@ -36,6 +36,7 @@ run_one <- function(criterion, cvec = NULL) {
     criterion,
     D = calc_Dopt(u, f, drop_tol = support_tol),
     A = calc_Aopt(u, f, drop_tol = support_tol),
+    E = calc_Eopt(u, f, drop_tol = support_tol),
     c = calc_copt(u, f, cVec = cvec, drop_tol = support_tol),
     Ds = calc_copt(u, f, cVec = cvec, drop_tol = support_tol)
   )
@@ -69,6 +70,7 @@ run_one <- function(criterion, cvec = NULL) {
 table6 <- rbind(
   run_one("D"),
   run_one("A"),
+  run_one("E"),
   run_one("c", c(0, 1, 1)),
   run_one("Ds", c(1, 0, 0))
 )

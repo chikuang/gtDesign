@@ -10,7 +10,7 @@ round_gt_design_budget(
   theta,
   C,
   q_cost,
-  criterion = c("D", "A", "c", "Ds"),
+  criterion = c("D", "A", "c", "Ds", "E"),
   opts = list(),
   n_index = 2L,
   fix_zero_floor = TRUE,
@@ -20,7 +20,7 @@ round_gt_design_budget(
 }
 \arguments{
 \item{approx_design}{Output of \code{\link[=calc_Dopt]{calc_Dopt()}}, \code{\link[=calc_Aopt]{calc_Aopt()}}, \code{\link[=calc_copt]{calc_copt()}},
-or \code{\link[=compute_design_SO]{compute_design_SO()}} on the same candidate set \code{u}.}
+\code{\link[=calc_Eopt]{calc_Eopt()}}, or \code{\link[=compute_design_SO]{compute_design_SO()}} on the same candidate set \code{u}.}
 
 \item{u}{Integer candidate pool sizes (same grid as used for \code{approx_design}).}
 
@@ -30,9 +30,9 @@ or \code{\link[=compute_design_SO]{compute_design_SO()}} on the same candidate s
 
 \item{q_cost}{Cost ratio \eqn{q} in \eqn{c(x)=1-q+qx}.}
 
-\item{criterion}{One of \code{"D"}, \code{"A"}, \code{"c"}, \code{"Ds"}.}
+\item{criterion}{One of \code{"D"}, \code{"A"}, \code{"c"}, \code{"Ds"}, \code{"E"}.}
 
-\item{opts}{Contrast options: \code{cVec_c} and/or \code{cVec_Ds} when needed.}
+\item{opts}{Contrast options: \code{cVec_c} and/or \code{cVec_Ds} when needed (not used for \code{"E"}).}
 
 \item{n_index}{Half-width of the extended support window (\eqn{x_i\pm} \code{n_index}).}
 

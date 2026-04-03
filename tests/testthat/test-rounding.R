@@ -28,3 +28,22 @@ test_that("round_gt_design_budget returns finite efficiency (D)", {
   expect_true(is.finite(out$efficiency))
   expect_true(out$efficiency > 0 && out$efficiency <= 1.01)
 })
+
+test_that("round_gt_design_budget returns finite efficiency (E)", {
+  skip_if_not_installed("CVXR")
+  theta <- c(p0 = 0.07, p1 = 0.93, p2 = 0.96)
+  u <- 1:35L
+  q_cost <- 0.2
+  f <- gt_huang2020_regressor(theta, q_cost)
+  res <- calc_Eopt(u, f, drop_tol = 1e-6)
+  out <- round_gt_design_budget(
+    res,
+    u,
+    theta,
+    C = 75,
+    q_cost = q_cost,
+    criterion = "E"
+  )
+  expect_true(is.finite(out$efficiency))
+  expect_true(out$efficiency > 0 && out$efficiency <= 1.01)
+})

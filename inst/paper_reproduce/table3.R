@@ -1,15 +1,19 @@
 # Reproduce Table 3 (paper): single-objective exact designs via budget rounding
 # ------------------------------------------------------------------------------
 # Title in paper: M = 150, theta* = (0.07, 0.93, 0.96), q = 0.2; criteria D, A,
-# D_s, c with c_vec = (0, 1, 1) for c-optimality.
+# D_s, c with c_vec = (0, 1, 1) for c-optimality. E-optimality rows use the same
+# rounding pipeline with [calc_Eopt()] as the approximate design.
 # C in {100, 500, 10000}.
 #
 # IMPORTANT: Table 3 matches MATLAB / `GT_Single_budget`-style rounding where
 # zero-fix is NOT applied after floor (`fix_zero_floor = FALSE`). With the
 # default `fix_zero_floor = TRUE`, floor counts (and C_r, Delta) differ.
 #
-# phi(I^-1) in the paper:  for D use det(M)^{-1}; for A use tr(M^{-1}); for D_s
-# and c use c' M^{-1} c with the same contrasts as in the optimizations.
+# phi columns: for D use det(M)^{-1}; for A use tr(M^{-1}); for D_s and c use
+# c' M^{-1} c with the same contrasts as in the optimizations. For E use the
+# same scalar as single-objective code: phi_E(M) = -lambda_min(M) (e.g.
+# res_E$value for the approximate design), *not* lambda_max(M^{-1}), so that
+# phi_exact matches the loss used in rounding and eff = loss_exact/loss_approx.
 #
 # Run:
 #   Rscript -e 'devtools::load_all(); source("inst/paper_reproduce/table3.R")'
@@ -18,6 +22,20 @@ options(scipen = 999)
 
 if (!exists("round_gt_design_budget", mode = "function")) {
   stop("Load package first: devtools::load_all()", call. = FALSE)
+}
+
+crit_default <- tryCatch(
+  eval(formals(round_gt_design_budget)$criterion),
+  error = function(e) character(0)
+)
+if (!"E" %in% crit_default) {
+  stop(
+    "This script needs `round_gt_design_budget()` with criterion \"E\" (current build has: ",
+    paste(crit_default, collapse = ", "),
+    "). Use devtools::load_all() from the gtDesign source directory; ",
+    "do not rely on an installed library(gtDesign) that predates E support.",
+    call. = FALSE
+  )
 }
 
 theta <- c(p0 = 0.07, p1 = 0.93, p2 = 0.96)
@@ -36,11 +54,17 @@ res_D <- calc_Dopt(u, f, drop_tol = support_tol)
 res_A <- calc_Aopt(u, f, drop_tol = support_tol)
 res_Ds <- calc_copt(u, f, cVec = opts$cVec_Ds, drop_tol = support_tol)
 res_c <- calc_copt(u, f, cVec = opts$cVec_c, drop_tol = support_tol)
+res_E <- calc_Eopt(u, f, drop_tol = support_tol)
 
-#' Scalar phi(I^-1) as in Table 3
+#' Table 3 scalar phi: inverse-information form for D, A, Ds, c; for E match
+#' [calc_Eopt()] / loss = -lambda_min(M).
 phi_invinfo <- function(M, criterion, opts) {
   if (criterion == "D") {
     return(1 / as.numeric(det(M)))
+  }
+  if (criterion == "E") {
+    ev <- eigen((M + t(M)) / 2, symmetric = TRUE, only.values = TRUE)$values
+    return(-min(ev))
   }
   Minv <- solve(M)
   if (criterion == "A") {
@@ -73,8 +97,6 @@ total_cost <- function(dm, q) {
   n <- as.numeric(dm[2, ])
   sum(n * vapply(x, function(xi) gt_huang2020_cost(xi, q), numeric(1)))
 }
-
-row_order <- c("D", "A", "Ds", "c")
 
 run_table3_row <- function(approx, criterion) {
   res_list <- vector("list", length(C_values))
@@ -113,7 +135,8 @@ tab3 <- rbind(
   run_table3_row(res_D, "D"),
   run_table3_row(res_A, "A"),
   run_table3_row(res_Ds, "Ds"),
-  run_table3_row(res_c, "c")
+  run_table3_row(res_c, "c"),
+  run_table3_row(res_E, "E")
 )
 rownames(tab3) <- NULL
 

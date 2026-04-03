@@ -172,6 +172,8 @@ efficiency_exact_vs_approx <- function(M_app, M_ex, criterion, opts, p) {
   key <- toupper(as.character(criterion))
   if (key == "D") {
     exp((la - le) / p)
+  } else if (key == "E") {
+    le / la
   } else {
     la / le
   }
@@ -186,13 +188,13 @@ efficiency_exact_vs_approx <- function(M_app, M_ex, criterion, opts, p) {
 #' `calc_budget_round_combinations.m`.
 #'
 #' @param approx_design Output of [calc_Dopt()], [calc_Aopt()], [calc_copt()],
-#'   or [compute_design_SO()] on the same candidate set `u`.
+#'   [calc_Eopt()], or [compute_design_SO()] on the same candidate set `u`.
 #' @param u Integer candidate pool sizes (same grid as used for `approx_design`).
 #' @param theta Nominal \eqn{(p_0,p_1,p_2)}.
 #' @param C Total cost budget (sum of run costs \eqn{n_i c(x_i)}).
 #' @param q_cost Cost ratio \eqn{q} in \eqn{c(x)=1-q+qx}.
-#' @param criterion One of `"D"`, `"A"`, `"c"`, `"Ds"`.
-#' @param opts Contrast options: `cVec_c` and/or `cVec_Ds` when needed.
+#' @param criterion One of `"D"`, `"A"`, `"c"`, `"Ds"`, `"E"`.
+#' @param opts Contrast options: `cVec_c` and/or `cVec_Ds` when needed (not used for `"E"`).
 #' @param n_index Half-width of the extended support window (\eqn{x_i\pm} `n_index`).
 #' @param fix_zero_floor If `TRUE` (default), redistribute runs so no support
 #'   pool has zero runs after `floor`, as in `GT_MO_rounding_budget.m`. If
@@ -225,13 +227,16 @@ round_gt_design_budget <- function(approx_design,
                                    theta,
                                    C,
                                    q_cost,
-                                   criterion = c("D", "A", "c", "Ds"),
+                                   criterion = c("D", "A", "c", "Ds", "E"),
                                    opts = list(),
                                    n_index = 2L,
                                    fix_zero_floor = TRUE,
                                    repair_floor_budget = TRUE,
                                    ...) {
-  criterion <- match.arg(criterion)
+  criterion <- match.arg(
+    criterion,
+    choices = c("D", "A", "c", "Ds", "E")
+  )
   if (length(C) != 1L || !is.finite(C) || C <= 0) {
     stop("`C` must be a positive scalar.", call. = FALSE)
   }

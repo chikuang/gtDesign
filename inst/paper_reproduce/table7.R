@@ -9,7 +9,7 @@ if (!exists("calc_Dopt", mode = "function")) {
 }
 
 theta <- c(p0 = 0.022, p1 = 0.92, p2 = 0.965)
-u <- 1:15L
+u <- seq_len(15L)
 C_tests <- 500
 q_cost <- 0
 support_tol <- 1e-5
@@ -25,6 +25,7 @@ run_one <- function(criterion, cvec = NULL) {
     criterion,
     D = calc_Dopt(u, f, drop_tol = support_tol),
     A = calc_Aopt(u, f, drop_tol = support_tol),
+    E = calc_Eopt(u, f, drop_tol = support_tol),
     c = calc_copt(u, f, cVec = cvec, drop_tol = support_tol),
     Ds = calc_copt(u, f, cVec = cvec, drop_tol = support_tol)
   )
@@ -56,10 +57,11 @@ run_one <- function(criterion, cvec = NULL) {
   )
 }
 
-# Match paper row order.
+# Match paper row order (E after A).
 table7 <- rbind(
   run_one("D"),
   run_one("A"),
+  run_one("E"),
   run_one("c", c(0, 1, 1)),
   run_one("Ds", c(1, 0, 0))
 )

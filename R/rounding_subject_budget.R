@@ -16,7 +16,7 @@
 #' @param theta Nominal \eqn{(p_0,p_1,p_2)}.
 #' @param n_subject_allow Subject-count cap.
 #' @param q_cost Cost ratio \eqn{q} in \eqn{c(x)=1-q+qx}.
-#' @param criterion One of \code{"D"}, \code{"A"}, \code{"c"}, \code{"Ds"}.
+#' @param criterion One of \code{"D"}, \code{"A"}, \code{"c"}, \code{"Ds"}, \code{"E"}.
 #' @param opts Contrast options: \code{cVec_c} and/or \code{cVec_Ds} when needed.
 #' @param n_index Half-width of extension window.
 #' @param fix_zero_floor Passed to [round_gt_design_budget()].
@@ -35,13 +35,16 @@ round_gt_design_subject_budget <- function(approx_design,
                                            theta,
                                            n_subject_allow,
                                            q_cost,
-                                           criterion = c("D", "A", "c", "Ds"),
+                                           criterion = c("D", "A", "c", "Ds", "E"),
                                            opts = list(),
                                            n_index = 2L,
                                            fix_zero_floor = TRUE,
                                            repair_floor_budget = TRUE,
                                            ...) {
-  criterion <- match.arg(criterion)
+  criterion <- match.arg(
+    criterion,
+    choices = c("D", "A", "c", "Ds", "E")
+  )
   if (length(n_subject_allow) != 1L || !is.finite(n_subject_allow) || n_subject_allow <= 0) {
     stop("`n_subject_allow` must be a positive scalar.", call. = FALSE)
   }

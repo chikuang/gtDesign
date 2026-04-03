@@ -1,18 +1,19 @@
 #' E-optimal approximate design for group testing experiments
 #'
-#' Maximizes the smallest eigenvalue of the (approximate) information matrix
-#' \eqn{\mathbf{M}(\mathbf{w}) = \sum_i w_i \mathbf{h}(x_i)\mathbf{h}(x_i)^\top} on a
-#' finite candidate set. The scalar loss (to be minimized) is
-#' \eqn{\mathrm{loss}(\mathbf{M}) = -\lambda_{\min}(\mathbf{M})}, matching the usual
-#' MATLAB form `loss = -lambda_min(FIM)` (e.g.\ `calc_loss_E`).
+#' Minimizes \eqn{-\lambda_{\min}(\mathbf{M})} over \eqn{\mathbf{w}} on a finite
+#' candidate set via \code{CVXR::Minimize(-CVXR::lambda_min(\ldots))}. The
+#' reported objective is \eqn{\mathrm{loss}(\mathbf{M}) = -\lambda_{\min}(\mathbf{M})},
+#' matching MATLAB `loss = -lambda_min(FIM)` (e.g.\ `calc_loss_E`).
 #'
 #' This matches [compute_design_SO()] with `criterion = "E"` (same scalar loss).
 #'
 #' @inheritParams calc_Dopt
 #'
-#' @return An object of class `"gt_e_design"` and `"gt_design"`. Component
-#'   `value` is \eqn{-\lambda_{\min}(\mathbf{M})} (smaller is better under this
-#'   convention, consistent with `compute_design_SO()`).
+#' @return An object of class `"gt_e_design"` and `"gt_design"`. Components
+#'   `value` and `optval` are the minimization objective
+#'   \eqn{-\lambda_{\min}(\mathbf{M})}: `value` is recomputed at the cleaned
+#'   support, `optval` is the solver optimum of the minimize objective (they may
+#'   differ slightly after `drop_tol`).
 #'
 #' @examples
 #' \donttest{
@@ -53,12 +54,13 @@ calc_Eopt <- function(u,
     })
   )
 
+  M_psd <- M_expr + ridge * diag(p)
   problem <- CVXR::Problem(
-    CVXR::Maximize(CVXR::lambda_min(M_expr + ridge * diag(p))),
+    CVXR::Minimize(-CVXR::lambda_min(M_psd)),
     constraints = list(sum(w) == 1)
   )
 
-  optval <- CVXR::psolve(problem, solver = solver, ...)
+  optval <- as.numeric(CVXR::psolve(problem, solver = solver, ...))
   solver_status <- CVXR::status(problem)
 
   w_opt <- as.numeric(CVXR::value(w))
