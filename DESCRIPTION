@@ -12,11 +12,11 @@ Authors@R: c(
       person(given = "Weng Kee", family = "Wong",
              role = c("ctb"))
              )
-Description: Finite candidate-set approximate optimal designs for group testing
-    and related experiments, using convex optimization (CVXR) and equivalence
-    checks. Implements the information matrix and cost structure for the
-    prevalence / sensitivity / specificity model used in Huang et al. (2020), as
-    in Yeh, Wong, and Zhou (arXiv:2508.08445).
+Description: Finite candidate-set approximate optimal designs for group   
+  testing and related experiments, using convex optimization and equivalence
+  checks. Implements the information matrix and cost structure for the
+  prevalence / sensitivity / specificity model used in Huang and colleagues
+    (2020), as in Chi-Kuang Yeh, Weng Kee Wong, and Julie Zhou (<doi:10.48550/arXiv.2508.08445>).
 URL: https://github.com/chikuang/gtDesign, https://arxiv.org/abs/2508.08445
 License: GPL-3
 BugReports: https://github.com/chikuang/gtDesign/issues
