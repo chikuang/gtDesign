@@ -33,9 +33,9 @@ check_equivalence <- function(design_obj,
     stop("`f` must be a regression function.", call. = FALSE)
   }
 
-  crit <- toupper(design_obj$criterion)
-  if (!crit %in% c("D", "A", "C")) {
-    stop("Equivalence theorem supports criteria 'D', 'A', and 'c'.", call. = FALSE)
+  crit <- canon_crit_key(design_obj$criterion)
+  if (!crit %in% c("D", "A", "c", "E")) {
+    stop("Equivalence theorem supports criteria 'D', 'A', 'c', and 'E'.", call. = FALSE)
   }
 
   if (is.null(u)) {
@@ -43,7 +43,7 @@ check_equivalence <- function(design_obj,
   }
 
   M <- design_obj$info_matrix
-  c_vec <- if (crit == "C") design_obj$cVec else NULL
+  c_vec <- if (crit == "c") design_obj$cVec else NULL
 
   dd_list <- calc_directional_derivatives(
     u, M, f,
@@ -55,7 +55,8 @@ check_equivalence <- function(design_obj,
     tolower(crit),
     d = "dD",
     a = "dA",
-    c = "dc"
+    c = "dc",
+    e = "dE"
   )
   deriv_vals <- dd_list[[nm]]
 

@@ -159,12 +159,12 @@ fim_matrix_expr <- function(u, w, f, info_weight = NULL) {
 #' @return A numeric column vector or NULL.
 #' @noRd
 get_contrast_vec <- function(criterion, opts, p) {
-  criterion <- toupper(criterion)
+  key <- canon_crit_key(criterion)
 
-  if (criterion == "DS") {
+  if (key == "Ds") {
     cvec <- opts$cVec_Ds
     nm <- "cVec_Ds"
-  } else if (criterion == "C") {
+  } else if (key == "c") {
     cvec <- opts$cVec_c
     nm <- "cVec_c"
   } else {
@@ -172,7 +172,7 @@ get_contrast_vec <- function(criterion, opts, p) {
   }
 
   if (is.null(cvec)) {
-    stop("For criterion `", criterion, "`, supply `opts$", nm, "`.", call. = FALSE)
+    stop("For criterion `", key, "`, supply `opts$", nm, "`.", call. = FALSE)
   }
 
   if (!is.numeric(cvec) || length(cvec) != p) {
@@ -192,7 +192,7 @@ get_contrast_vec <- function(criterion, opts, p) {
 #' @return A numeric scalar loss.
 #' @noRd
 scalar_loss_from_M <- function(M, criterion, opts = list()) {
-  cr <- toupper(as.character(criterion))
+  key <- canon_crit_key(criterion)
 
   safe_solve <- function(A, b = NULL) {
     tryCatch(
@@ -212,26 +212,26 @@ scalar_loss_from_M <- function(M, criterion, opts = list()) {
     )
   }
 
-  if (cr == "D") {
+  if (key == "D") {
     return(-as.numeric(determinant(M, logarithm = TRUE)$modulus))
   }
 
-  if (cr == "A") {
+  if (key == "A") {
     Minv <- safe_solve(M)
     return(sum(diag(Minv)))
   }
 
-  if (cr == "DS") {
+  if (key == "Ds") {
     cvec <- get_contrast_vec("Ds", opts, ncol(M))
     return(as.numeric(t(cvec) %*% safe_solve(M, cvec)))
   }
 
-  if (cr == "C") {
+  if (key == "c") {
     cvec <- get_contrast_vec("c", opts, ncol(M))
     return(as.numeric(t(cvec) %*% safe_solve(M, cvec)))
   }
 
-  if (cr == "E") {
+  if (key == "E") {
     evals <- eigen((M + t(M)) / 2, symmetric = TRUE, only.values = TRUE)$values
     return(-min(evals))
   }

@@ -1,3 +1,16 @@
+#' @keywords internal
+#' @noRd
+.sortrows_lastcoord_first <- function(mat) {
+  if (!nrow(mat)) {
+    return(mat)
+  }
+  nc <- ncol(mat)
+  args <- lapply(rev(seq_len(nc)), function(j) mat[, j])
+  ord <- do.call(order, args)
+  mat[ord, , drop = FALSE]
+}
+
+
 #' Enumerate nonnegative integer allocations (run-size rounding)
 #'
 #' All vectors \eqn{(z_1,\ldots,z_m)} with \eqn{z_j \ge 0}, \eqn{\sum_j z_j \le}
@@ -11,18 +24,6 @@
 #'   then remaining slots (`max_run_size -` total), sorted lexicographically
 #'   with the last coordinate changing fastest (MATLAB `sortrows` order).
 #'
-#' @noRd
-.sortrows_lastcoord_first <- function(mat) {
-  if (!nrow(mat)) {
-    return(mat)
-  }
-  nc <- ncol(mat)
-  args <- lapply(rev(seq_len(nc)), function(j) mat[, j])
-  ord <- do.call(order, args)
-  mat[ord, , drop = FALSE]
-}
-
-
 #' @export
 rounding_run_size_combinations <- function(n_items, max_run_size) {
   if (!is.numeric(n_items) || length(n_items) != 1L || n_items < 1L) {

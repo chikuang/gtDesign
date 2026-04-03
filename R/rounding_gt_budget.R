@@ -169,7 +169,7 @@ rounding_extension_colnames <- function(L, ncol_mat, x_ext = NULL) {
 efficiency_exact_vs_approx <- function(M_app, M_ex, criterion, opts, p) {
   la <- scalar_loss_from_M(M_app, criterion, opts)
   le <- scalar_loss_from_M(M_ex, criterion, opts)
-  key <- toupper(as.character(criterion))
+  key <- canon_crit_key(criterion)
   if (key == "D") {
     exp((la - le) / p)
   } else if (key == "E") {

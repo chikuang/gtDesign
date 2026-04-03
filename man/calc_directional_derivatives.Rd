@@ -10,7 +10,8 @@ calc_directional_derivatives(
   f,
   criteria = c("D"),
   cVec = NULL,
-  use_ginv = TRUE
+  use_ginv = TRUE,
+  eig_tol = NULL
 )
 }
 \arguments{
@@ -20,11 +21,15 @@ calc_directional_derivatives(
 
 \item{f}{Regression function returning a numeric vector.}
 
-\item{criteria}{Character vector of criteria, e.g. \code{c("D", "A", "c")}.}
+\item{criteria}{Character vector of criteria, e.g. \code{c("D", "A", "c", "E")}.}
 
 \item{cVec}{Optional vector for c-optimality.}
 
 \item{use_ginv}{Logical; if \code{TRUE}, use \code{\link[MASS:ginv]{MASS::ginv()}} when \code{M} is singular.}
+
+\item{eig_tol}{Tolerance for grouping eigenvalues with
+\eqn{\lambda_{\min}(\mathbf{M})} when computing \strong{E}-optimal derivatives
+(multiplicity \eqn{r^*}). Passed to the eigenvalue comparison.}
 }
 \value{
 A named list of directional derivative vectors.
@@ -32,3 +37,16 @@ A named list of directional derivative vectors.
 \description{
 Directional derivatives on a finite candidate set
 }
+\section{E-optimality}{
+
+Implements \eqn{d_E} from Sec.\ 4 (Eq.\ (9)) of Yeh, Wong, and Zhou
+(arXiv:2508.08445): with orthonormal \eqn{\mathbf{Q}(\mathbf{w})} spanning the
+eigenspace of \eqn{\lambda_{\min}(\mathbf{M})} and multiplicity \eqn{r^*},
+uses \eqn{\mathbf{B} = (1/r^*)\mathbf{I}_{r^*}} (trace one, positive
+semi-definite), so
+\deqn{d_E(u_i,\mathbf{w}) = \frac{1}{r^*}\|\mathbf{Q}^\top \mathbf{f}(u_i)\|^2
+  - \lambda_{\min}(\mathbf{M}).}
+When \eqn{r^*=1}, this is \eqn{(\mathbf{v}^\top \mathbf{f}(u_i))^2 -
+\lambda_{\min}(\mathbf{M})} for a unit eigenvector \eqn{\mathbf{v}}.
+}
+

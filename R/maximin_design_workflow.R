@@ -40,6 +40,7 @@
 #'   `equivalence` (or `NULL` if `check_equiv` is `FALSE`), `q`, and optionally
 #'   `reference_designs`. Plotting is a side effect when `make_figure` is `TRUE`.
 #'
+#' @importFrom utils modifyList
 #' @export
 maximin_design_workflow <- function(u,
                                     f,

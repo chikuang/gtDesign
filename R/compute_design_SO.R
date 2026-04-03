@@ -38,7 +38,7 @@ compute_design_SO <- function(u,
   }
 
   criterion <- match.arg(criterion)
-  cr <- toupper(criterion)
+  ck <- canon_crit_key(criterion)
 
   validate_design_inputs(u, f)
 
@@ -55,13 +55,13 @@ compute_design_SO <- function(u,
     w >= 0
   )
 
-  if (cr == "D") {
+  if (ck == "D") {
     constraints <- c(constraints, list(-CVXR::log_det(M_expr) <= del))
-  } else if (cr == "A") {
+  } else if (ck == "A") {
     constraints <- c(constraints, list(CVXR::tr_inv(M_expr) <= del))
-  } else if (cr == "E") {
+  } else if (ck == "E") {
     constraints <- c(constraints, list(-CVXR::lambda_min(M_expr) <= del))
-  } else if (cr %in% c("DS", "C")) {
+  } else if (ck %in% c("Ds", "c")) {
     cvec <- get_contrast_vec(criterion, opts, p)
     constraints <- c(constraints, list(CVXR::matrix_frac(cvec, M_expr) <= del))
   } else {

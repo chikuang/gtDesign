@@ -29,6 +29,7 @@
 #'   \code{loss_exact}, \code{efficiency}, \code{criterion}, and
 #'   \code{extension_table}.
 #'
+#' @importFrom stats setNames
 #' @export
 round_gt_design_subject_budget <- function(approx_design,
                                            u,

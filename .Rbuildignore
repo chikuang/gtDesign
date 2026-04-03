@@ -1,2 +1,7 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+^README\.qmd$
+^README_files$
+# Keep in GitHub for reproducibility; omit from CRAN source tarball
+^inst/examples/
+^inst/paper_reproduce/
