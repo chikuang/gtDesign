@@ -42,7 +42,7 @@ Julie Zhou (University of Victoria)
 status](https://www.r-pkg.org/badges/version/gtDesign.png)](https://CRAN.R-project.org/package=gtDesign)
 [![R-CMD-check](https://github.com/chikuang/gtDesign/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/chikuang/gtDesign/actions/workflows/R-CMD-check.yaml)
 [![](https://img.shields.io/github/languages/code-size/chikuang/gtDesign.svg)](https://github.com/chikuang/gtDesign)
-[![](https://cranlogs.r-pkg.org/badges/last-day/SLSEdesign?color=blue.png)](https://cran.r-project.org/package=gtDesign)
+[![](https://cranlogs.r-pkg.org/badges/last-day/gtDesign?color=blue.png)](https://cran.r-project.org/package=gtDesign)
 [![](https://cranlogs.r-pkg.org/badges/gtDesign.png)](https://cran.r-project.org/package=gtDesign)
 [![CRAN
 download](http://cranlogs.r-pkg.org/badges/grand-total/gtDesign?color=blue.png)](https://cran.r-project.org/package=gtDesign)
