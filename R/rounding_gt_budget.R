@@ -171,10 +171,24 @@ efficiency_exact_vs_approx <- function(M_app, M_ex, criterion, opts, p) {
   le <- scalar_loss_from_M(M_ex, criterion, opts)
   key <- canon_crit_key(criterion)
   if (key == "D") {
-    exp((la - le) / p)
+    ## Avoid Inf - Inf => NaN when log-det losses are infinite (singular/near-singular M)
+    if (!is.finite(la) || !is.finite(le)) {
+      return(NA_real_)
+    }
+    val <- exp((la - le) / p)
+    if (!is.finite(val)) {
+      return(NA_real_)
+    }
+    val
   } else if (key == "E") {
+    if (!is.finite(la) || !is.finite(le) || la == 0) {
+      return(NA_real_)
+    }
     le / la
   } else {
+    if (!is.finite(la) || !is.finite(le) || le == 0) {
+      return(NA_real_)
+    }
     la / le
   }
 }

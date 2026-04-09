@@ -1,5 +1,6 @@
 # gtDesign: Optimal designs for group testing experiments
 
+April 9, 2026
 
 - [Overview](#overview)
 - [Installation](#installation)
@@ -34,6 +35,19 @@ Weng Kee Wong (University of California, Los Angeles)
 [![ORCID](https://img.shields.io/badge/ORCID-0000--0001--5568--3054-A6CE39?logo=orcid.png)](https://orcid.org/0000-0001-5568-3054)
 
 Julie Zhou (University of Victoria)
+
+<!-- badges: start -->
+
+[![CRAN
+status](https://www.r-pkg.org/badges/version/gtDesign.png)](https://CRAN.R-project.org/package=gtDesign)
+[![R-CMD-check](https://github.com/chikuang/gtDesign/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/chikuang/gtDesign/actions/workflows/R-CMD-check.yaml)
+[![](https://img.shields.io/github/languages/code-size/chikuang/gtDesign.svg)](https://github.com/chikuang/gtDesign)
+[![](https://cranlogs.r-pkg.org/badges/last-day/SLSEdesign?color=blue.png)](https://cran.r-project.org/package=gtDesign)
+[![](https://cranlogs.r-pkg.org/badges/gtDesign.png)](https://cran.r-project.org/package=gtDesign)
+[![CRAN
+download](http://cranlogs.r-pkg.org/badges/grand-total/gtDesign?color=blue.png)](https://cran.r-project.org/package=gtDesign)
+
+<!-- badges: end -->
 
 ## Overview
 
@@ -74,15 +88,11 @@ and **specificity**, with $p_0 \in (0,1)$ and $p_1, p_2 \in (0.5, 1]$.
 For a pool of size $x \in \{1,\ldots,M\}$, the **positive response
 probability** is
 
-$$
-\pi(x \mid \theta) = p_1 - (p_1 + p_2 - 1)(1 - p_0)^x .
-$$
+$$\pi(x \mid \theta) = p_1 - (p_1 + p_2 - 1)(1 - p_0)^x .$$
 
 **Standardized cost** (assay + enrollment) is
 
-$$
-c(x) = 1 - q + q x, \qquad q = \frac{q_1}{q_0 + q_1} \in [0,1],
-$$
+$$c(x) = 1 - q + q x, \qquad q = \frac{q_1}{q_0 + q_1} \in [0,1],$$
 
 so $q = 0$ gives **constant cost per test** ($c(x) \equiv 1$), matching
 the “equal cost” setting in Huang et al.
@@ -90,16 +100,12 @@ the “equal cost” setting in Huang et al.
 The **Fisher information matrix** for $\theta$ under independent
 Bernoulli pool outcomes can be written as
 
-$$
-\mathbf{I}(\mathbf{w}, \theta) = \sum_{j=1}^{M} w_j \, \lambda(x_j) \, \mathbf{f}(x_j) \mathbf{f}(x_j)^\top,
-$$
+$$\mathbf{I}(\mathbf{w}, \theta) = \sum_{j=1}^{M} w_j \, \lambda(x_j) \, \mathbf{f}(x_j) \mathbf{f}(x_j)^\top,$$
 
 where $w_j$ are design weights on candidate pool sizes $x_j = j$,
 $\sum_j w_j = 1$,
 
-$$
-\lambda(x) = \frac{1}{c(x)\,\pi(x\mid\theta)\{1-\pi(x\mid\theta)\}},
-$$
+$$\lambda(x) = \frac{1}{c(x)\,\pi(x\mid\theta)\{1-\pi(x\mid\theta)\}},$$
 
 and $\mathbf{f}(x) = \nabla_\theta \pi(x\mid\theta)$ is the gradient of
 $\pi$ with respect to $\theta$ (see the paper for the explicit three
@@ -110,16 +116,12 @@ components).
 Many functions (`calc_Dopt`, `calc_Aopt`, `check_equivalence`, …) assume
 a **regression form**
 
-$$
-\mathbf{M}(\mathbf{w}) = \sum_j w_j \, \mathbf{h}(x_j) \mathbf{h}(x_j)^\top
-$$
+$$\mathbf{M}(\mathbf{w}) = \sum_j w_j \, \mathbf{h}(x_j) \mathbf{h}(x_j)^\top$$
 
 with **no separate `info_weight`**. That matches the Huang information
 matrix if we set
 
-$$
-\mathbf{h}(x) = \sqrt{\lambda(x)} \, \mathbf{f}(x).
-$$
+$$\mathbf{h}(x) = \sqrt{\lambda(x)} \, \mathbf{f}(x).$$
 
 The function **`gt_huang2020_regressor(theta, q)`** returns the function
 `function(x)` that computes $\mathbf{h}(x)$. You can still use

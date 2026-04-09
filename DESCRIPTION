@@ -31,5 +31,7 @@ Imports:
 Suggests: 
     testthat (>= 3.0.0),
     dplyr,
-    knitr
+    knitr,
+    doParallel,
+    pbapply
 Config/testthat/edition: 3

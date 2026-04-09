@@ -1,0 +1,229 @@
+---
+title: "Simple nonlinear regression: D-optimal design vs uniform (Fisher information)"
+subtitle: "Exponential decay model — larger information matrix ⇒ more accurate MLE on average"
+author: "Supplementary toy example (inst/examples)"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+## Nonlinear mean:  μ(x; θ) = θ₁ exp(−θ₂ x),  θ = (θ₁, θ₂)′,  θ₁ > 0, θ₂ > 0
+## Homoscedastic Gaussian errors:  y | x ~ N(μ(x; θ), σ²).
+## For a fixed σ², one observation at x contributes (1/σ²) ∇μ(x;θ) ∇μ(x;θ)′ to the
+## expected Fisher information (standard nonlinear least squares theory).
+## D-optimal *approximate* design maximizes log det( Σᵢ wᵢ Mᵢ ) over weights w on a
+## candidate grid (convex problem; solved here with CVXR).
+
+library(CVXR)
+library(tibble)
+library(knitr)
+
+sigma <- 0.12
+theta_true <- c(th1 = 2.0, th2 = 0.55)
+## Planning value for building the optimal design (can differ from theta_true)
+theta_plan <- c(th1 = 1.7, th2 = 0.5)
+
+## Candidate x values (design region)
+x_grid <- seq(0.05, 4.0, length.out = 22L)
+
+## Total sample size (sum of replicates at support points)
+n_total <- 96L
+
+## Monte Carlo: compare MLE error under two *fixed* designs
+n_rep <- 300L
+seed <- 20260404L
+```
+
+# Model and information slice
+
+```{r info-slice}
+## Gradient of μ w.r.t. θ = (θ₁, θ₂)
+grad_mu <- function(x, theta) {
+  th1 <- theta[["th1"]]
+  th2 <- theta[["th2"]]
+  e <- exp(-th2 * x)
+  c(d1 = e, d2 = -th1 * x * e)
+}
+
+## Single-observation expected information matrix M(x; θ) = (1/σ²) ∇μ ∇μ′
+info_slice <- function(x, theta, sig = sigma) {
+  g <- grad_mu(x, theta)
+  outer(g, g) / (sig^2)
+}
+
+mu_mean <- function(x, theta) {
+  theta[["th1"]] * exp(-theta[["th2"]] * x)
+}
+```
+
+# D-optimal weights on `x_grid` (CVXR)
+
+```{r dopt-cvxr}
+## Maximize log det( Σ wᵢ Mᵢ ) subject to wᵢ ≥ 0, Σ wᵢ = 1
+build_dopt_weights <- function(xg, theta, sig = sigma) {
+  Mlist <- lapply(xg, function(x) info_slice(x, theta, sig))
+  m <- length(Mlist)
+  w <- Variable(m)
+  Minfo <- w[1] * Constant(Mlist[[1]])
+  if (m >= 2L) {
+    for (k in 2L:m) {
+      Minfo <- Minfo + w[k] * Constant(Mlist[[k]])
+    }
+  }
+  prob <- Problem(
+    Maximize(log_det(Minfo)),
+    constraints = list(w >= 0, sum(w) == 1)
+  )
+  psolve(prob, solver = "SCS", verbose = FALSE)
+  list(weights = as.vector(value(w)))
+}
+
+res_d <- build_dopt_weights(x_grid, theta_plan, sigma)
+w_d <- pmax(res_d$weights, 0)
+w_d <- w_d / sum(w_d)
+
+design_d_approx <- tibble(x = x_grid, w = w_d)
+design_u_approx <- tibble(x = x_grid, w = rep(1 / length(x_grid), length(x_grid)))
+```
+
+# Round to integer allocation (same `n_total`)
+
+```{r round-design}
+round_design_fixed_n <- function(design_tbl, n_total) {
+  out <- design_tbl[order(design_tbl$x), , drop = FALSE]
+  raw_n <- n_total * out$w
+  n <- floor(raw_n)
+  frac <- raw_n - n
+  remainder <- n_total - sum(n)
+  if (remainder > 0L) {
+    idx <- order(frac, decreasing = TRUE)[seq_len(remainder)]
+    n[idx] <- n[idx] + 1L
+  }
+  out$n <- n
+  out <- out[out$n > 0L, , drop = FALSE]
+  out$w_achieved <- out$n / sum(out$n)
+  out
+}
+
+stage_d <- round_design_fixed_n(design_d_approx, n_total)
+stage_u <- round_design_fixed_n(design_u_approx, n_total)
+```
+
+# Fisher information at `theta_plan` for each **exact** design
+
+```{r fisher-compare}
+fisher_exact <- function(design_exact, theta, sig = sigma) {
+  M <- matrix(0, 2L, 2L)
+  for (i in seq_len(nrow(design_exact))) {
+    xi <- design_exact$x[i]
+    ni <- design_exact$n[i]
+    M <- M + ni * info_slice(xi, theta, sig)
+  }
+  M
+}
+
+Fd <- fisher_exact(stage_d, theta_plan)
+Fu <- fisher_exact(stage_u, theta_plan)
+
+det_d <- det(Fd)
+det_u <- det(Fu)
+p <- 2L
+rel_D_eff <- (det_u / det_d)^(1 / p) ## < 1 if D-opt has larger det(F)^{1/p}
+
+fisher_tbl <- tibble(
+  design = c("D-opt (planning theta)", "Uniform"),
+  log_det_Fisher_at_theta_plan = c(log(det_d), log(det_u)),
+  det_Fisher = c(det_d, det_u),
+  D_efficiency_vs_Dopt = c(1, rel_D_eff)
+)
+kable(fisher_tbl, digits = 6, caption = "Expected Fisher information at planning theta_plan (larger det(F) ⇒ smaller asymptotic generalized variance of the MLE).")
+```
+
+```{r plot-designs, fig.height=4, fig.width=7}
+par(mfrow = c(1L, 2L), mar = c(4, 4, 2, 1))
+barplot(stage_d$n, names.arg = stage_d$x, las = 2, cex.names = 0.55,
+        main = "D-opt (rounded)", xlab = expression(x), ylab = "n")
+barplot(stage_u$n, names.arg = stage_u$x, las = 2, cex.names = 0.55,
+        main = "Uniform (rounded)", xlab = expression(x), ylab = "n")
+par(mfrow = c(1L, 1L))
+```
+
+# Simulate data and fit with `nls`
+
+```{r simulate}
+expand_design <- function(design_exact) {
+  xs <- unlist(mapply(function(x, n) rep(x, n), design_exact$x, design_exact$n, SIMPLIFY = FALSE))
+  as.numeric(xs)
+}
+
+simulate_y <- function(x_vec, theta, sig = sigma, rng = NULL) {
+  if (!is.null(rng)) set.seed(rng)
+  mu <- mu_mean(x_vec, theta)
+  mu + rnorm(length(x_vec), 0, sig)
+}
+
+fit_nls <- function(x_vec, y_vec, start = theta_plan) {
+  dat <- data.frame(x = x_vec, y = y_vec)
+  fit <- tryCatch(
+    nls(
+      y ~ th1 * exp(-th2 * x),
+      data = dat,
+      start = list(th1 = start[["th1"]], th2 = start[["th2"]]),
+      control = nls.control(maxiter = 200, warnOnly = TRUE)
+    ),
+    error = function(e) NULL
+  )
+  if (is.null(fit)) {
+    return(c(th1 = NA_real_, th2 = NA_real_))
+  }
+  co <- coef(fit)
+  c(th1 = unname(co[["th1"]]), th2 = unname(co[["th2"]]))
+}
+
+xd <- expand_design(stage_d)
+xu <- expand_design(stage_u)
+
+set.seed(seed)
+err_d <- replicate(n_rep, {
+  y <- simulate_y(xd, theta_true)
+  th <- fit_nls(xd, y, theta_plan)
+  sum(abs(th - theta_true[c("th1", "th2")]))
+})
+
+set.seed(seed + 1L)
+err_u <- replicate(n_rep, {
+  y <- simulate_y(xu, theta_true)
+  th <- fit_nls(xu, y, theta_plan)
+  sum(abs(th - theta_true[c("th1", "th2")]))
+})
+
+sum_tbl <- tibble(
+  design = c("D-opt", "Uniform"),
+  mean_L1_error = c(mean(err_d, na.rm = TRUE), mean(err_u, na.rm = TRUE)),
+  sd_L1_error = c(sd(err_d, na.rm = TRUE), sd(err_u, na.rm = TRUE)),
+  pct_improvement_vs_uniform = c(
+    100 * (mean(err_u, na.rm = TRUE) - mean(err_d, na.rm = TRUE)) / mean(err_u, na.rm = TRUE),
+    NA_real_
+  )
+)
+kable(sum_tbl, digits = 5, caption = "Sum of absolute errors for the two parameters (smaller is better). Last row: % improvement of D-opt mean L1 vs uniform.")
+```
+
+```{r plot-errors, fig.height=4, fig.width=6}
+lim <- range(c(err_d, err_u), na.rm = TRUE)
+hist(err_d, breaks = 25, col = rgb(0, 0.5, 0.5, 0.35), main = "L1 error to theta_true", xlab = expression(L[1]~~error), xlim = lim, border = NA)
+hist(err_u, breaks = 25, col = rgb(0.85, 0.35, 0, 0.35), add = TRUE, border = NA)
+legend("topright", legend = c("D-opt design", "Uniform design"), fill = c(rgb(0, 0.5, 0.5, 0.45), rgb(0.85, 0.35, 0, 0.45)), bty = "n")
+```
+
+# What to look for
+
+1. **Fisher table:** `log_det_Fisher_at_theta_plan` should be **larger** for D-opt than for uniform at the **same** `theta_plan` and total `n_total`.
+2. **Simulation:** Mean L1 error should be **smaller** for D-opt when the model is correct and `n_total` is moderate or large. Monte Carlo noise remains: increase `n_rep` or `n_total` for a clearer gap.
+3. **Scope:** This is a **toy** nonlinear model to illustrate information and estimation; the group-testing model in the main package is more structured but the same D-opt idea applies.
+
+```{r session-info}
+sessionInfo()
+```

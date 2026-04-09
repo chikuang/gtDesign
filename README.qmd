@@ -9,9 +9,16 @@ execute:
   echo: true
   warning: false
   message: false
+date: today
+date-format: "MMMM D, YYYY"
 ---
 
 [![](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 **Authors**
 
@@ -22,6 +29,17 @@ Weng Kee Wong (University of California, Los Angeles)
 [![ORCID](https://img.shields.io/badge/ORCID-0000--0001--5568--3054-A6CE39?logo=orcid.png)](https://orcid.org/0000-0001-5568-3054)
 
 Julie Zhou (University of Victoria)
+
+<!-- badges: start -->
+[![CRAN
+status](https://www.r-pkg.org/badges/version/gtDesign)](https://CRAN.R-project.org/package=gtDesign)
+[![R-CMD-check](https://github.com/chikuang/gtDesign/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/chikuang/gtDesign/actions/workflows/R-CMD-check.yaml)
+[![](https://img.shields.io/github/languages/code-size/chikuang/gtDesign.svg)](https://github.com/chikuang/gtDesign)
+[![](https://cranlogs.r-pkg.org/badges/last-day/gtDesign?color=blue)](https://cran.r-project.org/package=gtDesign)
+[![](https://cranlogs.r-pkg.org/badges/gtDesign)](https://cran.r-project.org/package=gtDesign)
+[![CRAN download](http://cranlogs.r-pkg.org/badges/grand-total/gtDesign?color=blue)](https://cran.r-project.org/package=gtDesign)
+
+<!-- badges: end -->
 
 ## Overview
 
