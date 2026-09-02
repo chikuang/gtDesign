@@ -2,7 +2,9 @@ test_that("Huang et al. (2020) D-opt matches arXiv:2508.08445 Table 1 (q=0, M=61
   theta <- c(p0 = 0.07, p1 = 0.93, p2 = 0.96)
   u <- 1:61
   f <- gt_huang2020_regressor(theta, q = 0)
-  res <- calc_Dopt(u, f, drop_tol = 1e-6)
+  # First-order solvers can leave platform-dependent weights of a few 1e-6
+  # on candidates adjacent to the theoretical support.
+  res <- calc_Dopt(u, f, drop_tol = 1e-4)
 
   sup <- sort(res$design$point)
   expect_equal(sup, c(1, 17, 61))

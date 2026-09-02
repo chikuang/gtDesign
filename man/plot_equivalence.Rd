@@ -24,7 +24,7 @@ plot_equivalence(
 
 \item{pch_support}{Plotting symbol for support points.}
 
-\item{...}{Passed to \code{\link[graphics:plot.default]{graphics::plot()}}.}
+\item{...}{Passed to \code{\link[graphics:plot]{graphics::plot()}}.}
 }
 \value{
 Invisibly returns \code{eq_obj}.

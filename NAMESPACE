@@ -26,10 +26,12 @@ export(round_gt_design_n_maximin)
 export(round_gt_design_subject_budget)
 export(rounding_budget_combinations)
 export(rounding_run_size_combinations)
-importFrom(graphics,abline)
-importFrom(graphics,grid)
-importFrom(graphics,par)
-importFrom(graphics,plot)
-importFrom(graphics,points)
+importFrom(graphics,
+  abline,
+  grid,
+  par,
+  plot,
+  points
+)
 importFrom(stats,setNames)
 importFrom(utils,modifyList)
